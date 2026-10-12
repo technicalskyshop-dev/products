@@ -14,3 +14,4 @@ execSync('npx prisma generate --schema=prisma/schema.prisma', {
   env: process.env,
 });
 console.log('Prisma Client generated successfully!');
+
