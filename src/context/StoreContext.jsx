@@ -247,6 +247,18 @@ export function StoreProvider({ children }) {
     }
   };
 
+  const updateAdminCredentials = async (credentials) => {
+    try {
+      const res = await api.updateAdminCredentials(credentials);
+      if (res?.user) {
+        setAdminUser(res.user);
+      }
+      return { success: true, message: res?.message || 'Credentials updated successfully', user: res?.user };
+    } catch (err) {
+      return { success: false, error: err.message || 'Failed to update admin credentials' };
+    }
+  };
+
   // --- PRODUCT ACTIONS (Backed by Backend API) ---
 
   // --- PRODUCT ACTIONS (Backed by Backend API with Instant Optimistic Updates) ---
@@ -514,6 +526,7 @@ export function StoreProvider({ children }) {
     isAuthChecking,
     login,
     logout,
+    updateAdminCredentials,
     addProduct,
     updateProduct,
     deleteProduct,

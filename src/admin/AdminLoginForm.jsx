@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock, Mail, Store, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
-  const [email, setEmail] = useState('admin@curatedstudio.internal');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,7 +37,7 @@ export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">TechnicalSky Console</h2>
               <span className="text-[11px] text-neutral-400 font-medium block">
-                Production Backend Gateway
+                Production Gateway
               </span>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@curatedstudio.internal"
+                placeholder="admin@example.com"
                 required
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
@@ -99,9 +99,6 @@ export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
             </div>
-            <p className="text-[11px] text-neutral-500 mt-1">
-              Default bootstrap credentials: <code className="text-neutral-400">CuratorAdmin2026!</code>
-            </p>
           </div>
 
           <button
@@ -124,7 +121,7 @@ export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
         </form>
 
         <div className="mt-6 pt-5 border-t border-white/10 flex justify-between items-center text-[11px] text-neutral-500">
-          <span>Server Port: 5000 (Express)</span>
+          <span>Encrypted Session</span>
           <button
             type="button"
             onClick={onNavigateToStorefront}

@@ -101,6 +101,17 @@ export const api = {
     return request('/api/admin/auth/me');
   },
 
+  async updateAdminCredentials(data) {
+    const res = await request('/api/admin/auth/credentials', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+    if (res?.token && typeof localStorage !== 'undefined') {
+      localStorage.setItem('curator_token', res.token);
+    }
+    return res;
+  },
+
   // --- Protected Admin Dashboard & Analytics ---
   async getDashboard() {
     return request('/api/admin/dashboard');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Download,
@@ -9,11 +9,19 @@ import {
   AlertTriangle,
   FileCode,
   Tag,
+  Key,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export default function SettingsView({
   settings,
+  adminUser,
   onUpdateSettings,
+  onUpdateAdminCredentials,
   onResetToDefaults,
   onExportCatalog,
   showToast,
@@ -29,6 +37,24 @@ export default function SettingsView({
 
   const [isSaving, setIsSaving] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+  // Admin Credentials State
+  const [credData, setCredData] = useState({
+    email: adminUser?.email || '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [isSavingCreds, setIsSavingCreds] = useState(false);
+  const [credError, setCredError] = useState(null);
+
+  useEffect(() => {
+    if (adminUser?.email) {
+      setCredData((prev) => ({ ...prev, email: adminUser.email }));
+    }
+  }, [adminUser]);
 
   // Sync form data when remote settings load or update
   React.useEffect(() => {
@@ -62,6 +88,65 @@ export default function SettingsView({
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveCredentials = async (e) => {
+    e.preventDefault();
+    setCredError(null);
+
+    if (!credData.currentPassword) {
+      setCredError('Please enter your current master password to authorize changes.');
+      return;
+    }
+
+    const emailChanged =
+      credData.email.trim().toLowerCase() !== (adminUser?.email || '').toLowerCase();
+    const passwordChanged = Boolean(credData.newPassword.trim());
+
+    if (!emailChanged && !passwordChanged) {
+      setCredError('No changes detected. Enter a new email or new password.');
+      return;
+    }
+
+    if (passwordChanged) {
+      if (credData.newPassword.length < 6) {
+        setCredError('New password must be at least 6 characters long.');
+        return;
+      }
+      if (credData.newPassword !== credData.confirmPassword) {
+        setCredError('New password and confirm password do not match.');
+        return;
+      }
+    }
+
+    setIsSavingCreds(true);
+    try {
+      const res = await onUpdateAdminCredentials({
+        currentPassword: credData.currentPassword,
+        newEmail: emailChanged ? credData.email.trim() : undefined,
+        newPassword: passwordChanged ? credData.newPassword.trim() : undefined,
+      });
+
+      if (res?.success) {
+        setCredData((prev) => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        }));
+        showToast({
+          title: 'Admin Credentials Updated',
+          message: 'Master login details have been updated successfully. Use these new credentials next time.',
+          type: 'success',
+        });
+      } else {
+        setCredError(res?.error || 'Failed to update credentials. Please check current password.');
+      }
+    } catch (err) {
+      setCredError(err.message || 'An error occurred while updating credentials.');
+    } finally {
+      setIsSavingCreds(false);
     }
   };
 
@@ -224,6 +309,138 @@ export default function SettingsView({
           </div>
         </div>
       </form>
+
+      {/* Admin Security & Master Credentials Card */}
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-neutral-200/80 shadow-sm space-y-5">
+        <div className="border-b border-neutral-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Key size={18} className="text-neutral-900" />
+              <h3 className="text-sm font-bold text-neutral-900">Admin Account & Login Credentials</h3>
+            </div>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Change the master email address and password used to access this console.
+            </p>
+          </div>
+          {adminUser?.email && (
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 text-xs font-semibold self-start sm:self-auto border border-neutral-200/60">
+              <ShieldCheck size={13} className="text-emerald-600" />
+              <span>Current: {adminUser.email}</span>
+            </div>
+          )}
+        </div>
+
+        {credError && (
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start space-x-2.5">
+            <AlertTriangle size={15} className="shrink-0 text-red-600 mt-0.5" />
+            <span>{credError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSaveCredentials} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Admin Email */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-bold text-neutral-900">
+                Admin Login Email
+              </label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-3 text-neutral-400" />
+                <input
+                  type="email"
+                  value={credData.email}
+                  onChange={(e) => setCredData({ ...credData, email: e.target.value })}
+                  placeholder="admin@example.com"
+                  required
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                />
+              </div>
+              <p className="text-[10.5px] text-neutral-500">
+                The primary email address client uses to sign in to TechnicalSky Console.
+              </p>
+            </div>
+
+            {/* Current Password */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-bold text-neutral-900">
+                Current Master Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-3 text-neutral-400" />
+                <input
+                  type={showCurrentPass ? 'text' : 'password'}
+                  value={credData.currentPassword}
+                  onChange={(e) => setCredData({ ...credData, currentPassword: e.target.value })}
+                  placeholder="Enter current master password to verify authorization"
+                  required
+                  className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPass(!showCurrentPass)}
+                  className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  title={showCurrentPass ? 'Hide password' : 'Show password'}
+                >
+                  {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-neutral-900">
+                New Password <span className="text-neutral-400 font-normal">(Leave blank if keeping same)</span>
+              </label>
+              <div className="relative">
+                <Key size={15} className="absolute left-3.5 top-3 text-neutral-400" />
+                <input
+                  type={showNewPass ? 'text' : 'password'}
+                  value={credData.newPassword}
+                  onChange={(e) => setCredData({ ...credData, newPassword: e.target.value })}
+                  placeholder="Min 6 characters"
+                  className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  title={showNewPass ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-neutral-900">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Key size={15} className="absolute left-3.5 top-3 text-neutral-400" />
+                <input
+                  type={showNewPass ? 'text' : 'password'}
+                  value={credData.confirmPassword}
+                  onChange={(e) => setCredData({ ...credData, confirmPassword: e.target.value })}
+                  placeholder="Re-enter new password"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={isSavingCreds}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-neutral-900 hover:bg-black transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+            >
+              <ShieldCheck size={14} />
+              <span>{isSavingCreds ? 'Updating Credentials...' : 'Update Admin Credentials'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Catalog Backup & Export */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">

@@ -89,5 +89,61 @@ export class AuthService {
 
     return { user: created };
   }
+
+  static async updateCredentials(
+    userId: string,
+    input: { currentPassword: string; newEmail?: string; newPassword?: string }
+  ): Promise<{
+    token: string;
+    user: { id: string; email: string; role: string };
+  }> {
+    const user = await prisma.adminUser.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('Admin account not found', 404);
+    }
+
+    // Verify current password
+    const isMatch = await this.comparePassword(input.currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new AppError('Current password is incorrect. Please verify and try again.', 400);
+    }
+
+    const dataToUpdate: { email?: string; passwordHash?: string } = {};
+
+    if (input.newEmail && input.newEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+      const emailToSet = input.newEmail.trim().toLowerCase();
+      const existing = await prisma.adminUser.findUnique({
+        where: { email: emailToSet },
+      });
+      if (existing && existing.id !== user.id) {
+        throw new AppError('An account with this email address already exists.', 409);
+      }
+      dataToUpdate.email = emailToSet;
+    }
+
+    if (input.newPassword && input.newPassword.trim()) {
+      dataToUpdate.passwordHash = await this.hashPassword(input.newPassword.trim());
+    }
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      throw new AppError('No changes detected in email or password.', 400);
+    }
+
+    const updatedUser = await prisma.adminUser.update({
+      where: { id: user.id },
+      data: dataToUpdate,
+      select: { id: true, email: true, role: true },
+    });
+
+    const token = this.generateToken(updatedUser);
+
+    return {
+      token,
+      user: updatedUser,
+    };
+  }
 }
 

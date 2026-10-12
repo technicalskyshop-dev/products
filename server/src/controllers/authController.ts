@@ -47,5 +47,30 @@ export class AuthController {
       user: req.adminUser,
     });
   }
+
+  static async updateCredentials(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.adminUser!.id;
+      const { token, user } = await AuthService.updateCredentials(userId, req.body);
+
+      // Refresh HttpOnly session cookie with updated identity
+      res.cookie(env.ADMIN_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Admin credentials updated successfully',
+        user,
+        token,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

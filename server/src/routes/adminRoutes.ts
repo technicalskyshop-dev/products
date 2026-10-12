@@ -4,7 +4,7 @@ import { AdminController } from '../controllers/adminController.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { loginRateLimiter } from '../middleware/rateLimiter.js';
 import { validateBody } from '../middleware/validate.js';
-import { loginSchema } from '../validation/authSchemas.js';
+import { loginSchema, updateCredentialsSchema } from '../validation/authSchemas.js';
 import {
   createProductSchema,
   updateProductSchema,
@@ -31,6 +31,11 @@ router.use(requireAdmin);
 
 // Current User & Session
 router.get('/auth/me', AuthController.getMe);
+router.patch(
+  '/auth/credentials',
+  validateBody(updateCredentialsSchema),
+  AuthController.updateCredentials
+);
 
 // Overview Metrics & Analytics
 router.get('/dashboard', AdminController.getDashboard);

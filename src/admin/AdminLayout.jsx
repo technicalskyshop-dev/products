@@ -359,7 +359,9 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             {activeTab === 'settings' && (
               <SettingsView
                 settings={store.settings}
+                adminUser={store.adminUser}
                 onUpdateSettings={store.updateSettings}
+                onUpdateAdminCredentials={store.updateAdminCredentials}
                 onResetToDefaults={store.resetToDefaults}
                 onExportCatalog={store.exportCatalogJson}
                 showToast={showToast}
