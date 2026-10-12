@@ -24,10 +24,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static Asset Uploads
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// API Routes
+// API Routes (Mounted under /api and root fallback for serverless functions)
 app.use('/api', publicRoutes);
 app.use('/api', redirectRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Serverless fallback mounts (if runtime rewrites strip the /api prefix)
+app.use('/admin', adminRoutes);
+app.use('/go', redirectRoutes);
+app.use('/', publicRoutes);
 
 // Catch-all 404 for unknown endpoints
 app.use(notFoundHandler);
