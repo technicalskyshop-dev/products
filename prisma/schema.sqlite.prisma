@@ -1,0 +1,79 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  order     Int       @default(0)
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                  String           @id @default(uuid())
+  name                String
+  slug                String           @unique
+  shortDescription    String?
+  description         String?
+  categoryId          String
+  category            Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  imageUrl            String
+  displayPrice        String
+  priceAmount         Decimal
+  originalPrice       String?
+  originalPriceAmount Decimal?
+  verifiedPriceSource String?
+  priceLastVerifiedAt DateTime?
+  amazonUrl           String
+  flipkartUrl         String
+  aspectRatio         String?          @default("aspect-[3/4]")
+  heightClass         String?          @default("h-80 sm:h-96 lg:h-[410px]")
+  status              String           @default("draft")
+  isFeatured          Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  affiliateClicks     AffiliateClick[]
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@map("products")
+}
+
+model AffiliateClick {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platform  String
+  referrer  String?
+  userAgent String?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([productId, platform])
+  @@index([createdAt])
+  @@map("affiliate_clicks")
+}
+

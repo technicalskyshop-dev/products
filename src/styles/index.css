@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #171717;
+    background-color: #DFDAEB;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Subtle gradient background utility */
+.canvas-bg {
+  background-color: #ECE7F5;
+  background-image: 
+    radial-gradient(ellipse 55% 55% at 0% 100%, rgba(248, 198, 222, 0.55) 0%, rgba(248, 198, 222, 0) 70%),
+    radial-gradient(circle at 100% 0%, rgba(235, 231, 245, 0.4) 0%, rgba(235, 231, 245, 0) 60%);
+}
+
+.pale-tile {
+  background-color: #F6F4FA;
+}
+
+/* Custom subtle scrollbar */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.14) transparent;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
+  border-radius: 9999px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Editorial Smooth Micro-Animations */
+@keyframes fadeInSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeInSoft {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmerWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-modal-scale {
+  animation: fadeInScale 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-soft {
+  animation: fadeInSoft 0.25s ease-out both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #F5F2F9 25%, #ECE7F5 50%, #F5F2F9 75%);
+  background-size: 200% 100%;
+  animation: shimmerWave 1.8s infinite ease-in-out;
+}
+
+@keyframes slideUpSheet {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-up {
+  animation: slideUpSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
