@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "prisma generate --schema=prisma/schema.prisma && vite build",
-    "vercel-build": "prisma generate --schema=prisma/schema.prisma && tsc && vite build",
+    "build": "node scripts/prepare-build.mjs && vite build",
+    "vercel-build": "node scripts/prepare-build.mjs && tsc && vite build",
     "preview": "vite preview",
     "server:dev": "tsx server/src/index.ts",
     "server:build": "tsc",
