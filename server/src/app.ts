@@ -14,6 +14,9 @@ const UPLOADS_DIR = path.resolve(__dirname, '../../public/uploads');
 
 export const app = express();
 
+// Trust reverse proxy headers (Vercel, Cloudflare, etc.)
+app.set('trust proxy', 1);
+
 // Security and Parsing Middlewares
 app.use(securityHeaders);
 app.use(corsMiddleware);
