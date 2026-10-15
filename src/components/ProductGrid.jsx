@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import ProductCard from './ProductCard';
 
 export default function ProductGrid({ products = [] }) {
+  const hasMountedRef = useRef(false);
+
+  useEffect(() => {
+    hasMountedRef.current = true;
+  }, []);
+
   if (!products || products.length === 0) {
     return (
       <div className="w-full py-28 flex flex-col items-center justify-center text-center">
@@ -28,8 +34,8 @@ export default function ProductGrid({ products = [] }) {
         {products.map((product, idx) => (
           <div
             key={product.id}
-            className="animate-fade-in-up"
-            style={{ animationDelay: `${(idx % 12) * 35}ms` }}
+            className={hasMountedRef.current ? '' : 'animate-fade-in-up'}
+            style={hasMountedRef.current ? undefined : { animationDelay: `${(idx % 12) * 35}ms` }}
           >
             <ProductCard product={product} />
           </div>

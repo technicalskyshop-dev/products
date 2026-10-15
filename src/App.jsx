@@ -10,7 +10,14 @@ function getInitialPath() {
   if (typeof window === 'undefined') return '/';
   const path = window.location.pathname;
   if (path === '/admin' || path.startsWith('/admin/')) return '/admin';
-  if (window.location.hash === '#/admin' || window.location.hash.startsWith('#/admin')) return '/admin';
+  if (
+    window.location.hash === '#/admin' ||
+    window.location.hash.startsWith('#/admin') ||
+    window.location.hash === '#admin' ||
+    window.location.hash.startsWith('#admin')
+  ) {
+    return '/admin';
+  }
   if (window.location.search.includes('admin=true')) return '/admin';
   return '/';
 }

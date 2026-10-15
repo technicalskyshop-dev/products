@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { api } from '../api/client';
 import { DEFAULT_SETTINGS, DEFAULT_CATEGORIES, INITIAL_PRODUCTS, slugify } from '../data/products';
 
@@ -14,18 +14,91 @@ const VIRTUAL_ALL_CATEGORY = {
   order: 0,
 };
 
+function getCachedJson(key, fallback) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const item = localStorage.getItem(key);
+    if (item) {
+      const parsed = JSON.parse(item);
+      if (Array.isArray(fallback) ? Array.isArray(parsed) && parsed.length > 0 : parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch {
+    // Ignore storage or parse errors
+  }
+  return fallback;
+}
+
+function areProductsEqual(prevList, newList) {
+  if (!prevList || !newList) return false;
+  if (prevList.length !== newList.length) return false;
+  for (let i = 0; i < prevList.length; i++) {
+    const a = prevList[i];
+    const b = newList[i];
+    if (
+      a.id !== b.id ||
+      a.status !== b.status ||
+      a.displayPrice !== b.displayPrice ||
+      a.name !== b.name ||
+      a.imageUrl !== b.imageUrl ||
+      a.updatedAt !== b.updatedAt
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areCategoriesEqual(prevList, newList) {
+  if (!prevList || !newList) return false;
+  if (prevList.length !== newList.length) return false;
+  for (let i = 0; i < prevList.length; i++) {
+    const a = prevList[i];
+    const b = newList[i];
+    if (a.id !== b.id || a.name !== b.name || a.enabled !== b.enabled || a.order !== b.order) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areSettingsEqual(prevSettings, newSettings) {
+  if (!prevSettings || !newSettings) return false;
+  const keys = ['storeName', 'brandWordmark', 'storeTagline', 'currencySymbol', 'defaultAmazonTag', 'defaultFlipkartTag', 'inquiryEmail', 'announcementNotice'];
+  for (const k of keys) {
+    if (prevSettings[k] !== newSettings[k]) return false;
+  }
+  return true;
+}
+
+function checkIsAdminRoute() {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/admin') ||
+    window.location.hash.startsWith('#/admin') ||
+    window.location.hash.startsWith('#admin') ||
+    window.location.search.includes('admin=true')
+  );
+}
+
 export function StoreProvider({ children }) {
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [products, setProducts] = useState(() => getCachedJson('curator_cached_products', INITIAL_PRODUCTS));
+  const [categories, setCategories] = useState(() => getCachedJson('curator_cached_categories', DEFAULT_CATEGORIES));
+  const [settings, setSettings] = useState(() => getCachedJson('curator_cached_settings', DEFAULT_SETTINGS));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Authentication State
   const [adminUser, setAdminUser] = useState(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(checkIsAdminRoute);
 
   const isAuthenticated = Boolean(adminUser);
+
+  // Synchronization & Throttle Refs
+  const inFlightPublicFetchRef = useRef(null);
+  const lastPublicFetchTimeRef = useRef(0);
+  const mountTimeRef = useRef(Date.now());
 
   // Broadcast catalog mutations across all open browser tabs / windows
   const notifyCatalogChanged = useCallback(() => {
@@ -43,40 +116,64 @@ export function StoreProvider({ children }) {
     }
   }, []);
 
-  // Fetch Public Catalog (Categories & Published Products)
+  // Fetch Public Catalog (Categories & Published Products) with In-Flight Deduplication & Equality Checks
   const fetchPublicData = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setIsLoading(true);
-      setError(null);
-
-      const [catRes, prodRes, setRes] = await Promise.all([
-        api.getCategories(),
-        api.getProducts({ limit: 100 }),
-        api.getSettings().catch(() => null),
-      ]);
-
-      if (catRes.categories && catRes.categories.length > 0) {
-        const fetchedCategories = catRes.categories.sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
-        );
-        setCategories([VIRTUAL_ALL_CATEGORY, ...fetchedCategories]);
-      }
-
-      if (prodRes.products && prodRes.products.length > 0) {
-        setProducts(prodRes.products);
-      }
-
-      if (setRes?.settings) {
-        setSettings((prev) => ({ ...prev, ...setRes.settings }));
-      }
-    } catch (err) {
-      console.warn('Backend API unavailable, using initial curated catalog:', err);
-      // Fallback to initial curated data so storefront never renders blank
-      setCategories(DEFAULT_CATEGORIES);
-      setProducts(INITIAL_PRODUCTS);
-    } finally {
-      if (!silent) setIsLoading(false);
+    if (inFlightPublicFetchRef.current) {
+      return inFlightPublicFetchRef.current;
     }
+
+    const promise = (async () => {
+      try {
+        if (!silent) setIsLoading(true);
+        setError(null);
+
+        const [catRes, prodRes, setRes] = await Promise.all([
+          api.getCategories(),
+          api.getProducts({ limit: 100 }),
+          api.getSettings().catch(() => null),
+        ]);
+
+        if (catRes?.categories && catRes.categories.length > 0) {
+          const fetchedCategories = catRes.categories.sort(
+            (a, b) => (a.order || 0) - (b.order || 0)
+          );
+          const nextCategories = [VIRTUAL_ALL_CATEGORY, ...fetchedCategories];
+          setCategories((prev) => {
+            if (areCategoriesEqual(prev, nextCategories)) return prev;
+            try { localStorage.setItem('curator_cached_categories', JSON.stringify(nextCategories)); } catch {}
+            return nextCategories;
+          });
+        }
+
+        if (prodRes?.products && prodRes.products.length > 0) {
+          setProducts((prev) => {
+            if (areProductsEqual(prev, prodRes.products)) return prev;
+            try { localStorage.setItem('curator_cached_products', JSON.stringify(prodRes.products)); } catch {}
+            return prodRes.products;
+          });
+        }
+
+        if (setRes?.settings) {
+          setSettings((prev) => {
+            const nextSettings = { ...prev, ...setRes.settings };
+            if (areSettingsEqual(prev, nextSettings)) return prev;
+            try { localStorage.setItem('curator_cached_settings', JSON.stringify(nextSettings)); } catch {}
+            return nextSettings;
+          });
+        }
+
+        lastPublicFetchTimeRef.current = Date.now();
+      } catch (err) {
+        console.warn('Backend API unavailable, retaining curated catalog:', err);
+        setProducts((prev) => (prev && prev.length > 0 ? prev : INITIAL_PRODUCTS));
+      } finally {
+        if (!silent) setIsLoading(false);
+        inFlightPublicFetchRef.current = null;
+      }
+    })();
+
+    inFlightPublicFetchRef.current = promise;
+    return promise;
   }, []);
 
   // Fetch Admin Catalog (includes Drafts & full stats)
@@ -112,17 +209,13 @@ export function StoreProvider({ children }) {
   // Check Current Session on App Mount (only if visiting /admin)
   useEffect(() => {
     async function checkSession() {
-      const isAdminRoute = typeof window !== 'undefined' && (
-        window.location.pathname.startsWith('/admin') ||
-        window.location.hash.startsWith('#/admin') ||
-        window.location.search.includes('admin=true')
-      );
+      const isAdminRoute = checkIsAdminRoute();
 
       if (isAdminRoute) {
         try {
           setIsAuthChecking(true);
           const res = await api.getMe();
-          if (res.user) {
+          if (res?.user) {
             setAdminUser(res.user);
             await fetchAdminData();
             return;
@@ -145,7 +238,7 @@ export function StoreProvider({ children }) {
     checkSession();
   }, [fetchAdminData, fetchPublicData]);
 
-  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Tab Focus Revalidation, & 5-Second Background Polling)
+  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Tab Focus Revalidation, & Background Polling)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -183,6 +276,11 @@ export function StoreProvider({ children }) {
     // 3. Tab Visibility Auto-Revalidation (when switching browser tabs)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Do not re-fetch if tab just mounted within 15 seconds or already fetched within 30 seconds
+        if (now - mountTimeRef.current < 15000) return;
+        if (now - lastPublicFetchTimeRef.current < 30000) return;
+
         if (adminUser) {
           fetchAdminData();
         } else {
@@ -195,6 +293,9 @@ export function StoreProvider({ children }) {
     // 4. Lightweight Background Polling Heartbeat (every 30 seconds when tab is open)
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        if (now - lastPublicFetchTimeRef.current < 30000) return;
+
         if (adminUser) {
           fetchAdminData();
         } else {
