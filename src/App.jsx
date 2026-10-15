@@ -34,11 +34,15 @@ export default function App() {
   // Keep route synced with browser history & address bar
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentRoute(getInitialPath());
+      const nextRoute = getInitialPath();
+      setCurrentRoute(nextRoute);
+      if (nextRoute === '/') {
+        refreshCatalog?.();
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [refreshCatalog]);
 
   const navigate = (path) => {
     setCurrentRoute(path);

@@ -27,6 +27,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static Asset Uploads
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Disable caching for dynamic API responses across edge proxies, CDNs, and browsers
+app.use((_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
 // API Routes (Mounted under /api and root fallback for serverless functions)
 app.use('/api', publicRoutes);
 app.use('/api', redirectRoutes);

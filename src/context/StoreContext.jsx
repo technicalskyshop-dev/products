@@ -39,10 +39,20 @@ function areProductsEqual(prevList, newList) {
     if (
       a.id !== b.id ||
       a.status !== b.status ||
+      Boolean(a.isFeatured) !== Boolean(b.isFeatured) ||
       a.displayPrice !== b.displayPrice ||
+      Number(a.priceAmount || 0) !== Number(b.priceAmount || 0) ||
+      Number(a.priceValue || 0) !== Number(b.priceValue || 0) ||
       a.name !== b.name ||
       a.imageUrl !== b.imageUrl ||
-      a.updatedAt !== b.updatedAt
+      a.categoryId !== b.categoryId ||
+      a.category !== b.category ||
+      a.categoryLabel !== b.categoryLabel ||
+      a.amazonUrl !== b.amazonUrl ||
+      a.flipkartUrl !== b.flipkartUrl ||
+      a.shortDescription !== b.shortDescription ||
+      a.description !== b.description ||
+      String(a.updatedAt || '') !== String(b.updatedAt || '')
     ) {
       return false;
     }
@@ -117,6 +127,7 @@ export function StoreProvider({ children }) {
   }, []);
 
   // Fetch Public Catalog (Categories & Published Products) with In-Flight Deduplication & Equality Checks
+  // Fetch Public Catalog (Categories & Published Products) with In-Flight Deduplication & Equality Checks
   const fetchPublicData = useCallback(async (silent = false) => {
     if (inFlightPublicFetchRef.current) {
       return inFlightPublicFetchRef.current;
@@ -133,7 +144,7 @@ export function StoreProvider({ children }) {
           api.getSettings().catch(() => null),
         ]);
 
-        if (catRes?.categories && catRes.categories.length > 0) {
+        if (Array.isArray(catRes?.categories)) {
           const fetchedCategories = catRes.categories.sort(
             (a, b) => (a.order || 0) - (b.order || 0)
           );
@@ -145,7 +156,7 @@ export function StoreProvider({ children }) {
           });
         }
 
-        if (prodRes?.products && prodRes.products.length > 0) {
+        if (Array.isArray(prodRes?.products)) {
           setProducts((prev) => {
             if (areProductsEqual(prev, prodRes.products)) return prev;
             try { localStorage.setItem('curator_cached_products', JSON.stringify(prodRes.products)); } catch {}
@@ -165,7 +176,6 @@ export function StoreProvider({ children }) {
         lastPublicFetchTimeRef.current = Date.now();
       } catch (err) {
         console.warn('Backend API unavailable, retaining curated catalog:', err);
-        setProducts((prev) => (prev && prev.length > 0 ? prev : INITIAL_PRODUCTS));
       } finally {
         if (!silent) setIsLoading(false);
         inFlightPublicFetchRef.current = null;
@@ -176,10 +186,10 @@ export function StoreProvider({ children }) {
     return promise;
   }, []);
 
-  // Fetch Admin Catalog (includes Drafts & full stats)
-  const fetchAdminData = useCallback(async () => {
+  // Fetch Admin Catalog (includes Drafts & full metrics) with Zero-Flicker Protection
+  const fetchAdminData = useCallback(async (silent = true) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       setError(null);
 
       const [catRes, prodRes, setRes] = await Promise.all([
@@ -188,21 +198,40 @@ export function StoreProvider({ children }) {
         api.getAdminSettings().catch(() => null),
       ]);
 
-      const fetchedCategories = (catRes.categories || []).sort(
-        (a, b) => (a.order || 0) - (b.order || 0)
-      );
+      if (Array.isArray(catRes?.categories)) {
+        const fetchedCategories = catRes.categories.sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        );
+        const nextCategories = [VIRTUAL_ALL_CATEGORY, ...fetchedCategories];
+        setCategories((prev) => {
+          if (areCategoriesEqual(prev, nextCategories)) return prev;
+          try { localStorage.setItem('curator_cached_categories', JSON.stringify(nextCategories)); } catch {}
+          return nextCategories;
+        });
+      }
 
-      setCategories([VIRTUAL_ALL_CATEGORY, ...fetchedCategories]);
-      setProducts(prodRes.products || []);
+      if (Array.isArray(prodRes?.products)) {
+        setProducts((prev) => {
+          if (areProductsEqual(prev, prodRes.products)) return prev;
+          try { localStorage.setItem('curator_cached_products', JSON.stringify(prodRes.products)); } catch {}
+          return prodRes.products;
+        });
+      }
 
       if (setRes?.settings) {
-        setSettings((prev) => ({ ...prev, ...setRes.settings }));
+        setSettings((prev) => {
+          const next = { ...prev, ...setRes.settings };
+          if (areSettingsEqual(prev, next)) return prev;
+          try { localStorage.setItem('curator_cached_settings', JSON.stringify(next)); } catch {}
+          return next;
+        });
       }
+      lastPublicFetchTimeRef.current = Date.now();
     } catch (err) {
       console.error('Failed fetching admin data from backend API:', err);
       setError(err.message || 'Unable to load admin catalogue');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
@@ -217,7 +246,7 @@ export function StoreProvider({ children }) {
           const res = await api.getMe();
           if (res?.user) {
             setAdminUser(res.user);
-            await fetchAdminData();
+            await fetchAdminData(false);
             return;
           }
         } catch {
@@ -238,22 +267,27 @@ export function StoreProvider({ children }) {
     checkSession();
   }, [fetchAdminData, fetchPublicData]);
 
-  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Tab Focus Revalidation, & Background Polling)
+  // Unified silent sync trigger across tab switch, cross-device polling, and BroadcastChannel
+  const syncLatestCatalog = useCallback(async () => {
+    if (adminUser) {
+      await fetchAdminData(true);
+    } else {
+      await fetchPublicData(true);
+    }
+  }, [adminUser, fetchAdminData, fetchPublicData]);
+
+  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Instant Tab/Window Focus, & 3.5s Background Heartbeat)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Cross-tab BroadcastChannel listener
+    // 1. Cross-tab BroadcastChannel listener (Instant 0ms sync between open tabs)
     let channel = null;
     if ('BroadcastChannel' in window) {
       try {
         channel = new BroadcastChannel('curated_discovery_sync');
         channel.onmessage = (event) => {
           if (event.data?.type === 'CATALOG_MUTATED') {
-            if (adminUser) {
-              fetchAdminData();
-            } else {
-              fetchPublicData(true);
-            }
+            syncLatestCatalog();
           }
         };
       } catch {
@@ -264,53 +298,41 @@ export function StoreProvider({ children }) {
     // 2. Storage event fallback for cross-tab sync
     const handleStorage = (e) => {
       if (e.key === 'curated_discovery_last_sync') {
-        if (adminUser) {
-          fetchAdminData();
-        } else {
-          fetchPublicData(true);
-        }
+        syncLatestCatalog();
       }
     };
     window.addEventListener('storage', handleStorage);
 
-    // 3. Tab Visibility Auto-Revalidation (when switching browser tabs)
-    const handleVisibilityChange = () => {
+    // 3. Tab Visibility & Window Focus Auto-Revalidation (when switching browser tabs/windows)
+    const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        // Do not re-fetch if tab just mounted within 15 seconds or already fetched within 30 seconds
-        if (now - mountTimeRef.current < 15000) return;
-        if (now - lastPublicFetchTimeRef.current < 30000) return;
-
-        if (adminUser) {
-          fetchAdminData();
-        } else {
-          fetchPublicData(true);
-        }
+        // Allow immediate revalidation on tab focus, throttled to 2 seconds to avoid rapid duplicate fetches
+        if (now - lastPublicFetchTimeRef.current < 2000) return;
+        syncLatestCatalog();
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
 
-    // 4. Lightweight Background Polling Heartbeat (every 30 seconds when tab is open)
+    // 4. Ultra-responsive Background Polling Heartbeat (every 3.5 seconds)
+    // Ensures other devices (mobile phones, secondary screens) update automatically in near real-time
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        if (now - lastPublicFetchTimeRef.current < 30000) return;
-
-        if (adminUser) {
-          fetchAdminData();
-        } else {
-          fetchPublicData(true);
-        }
+        if (now - lastPublicFetchTimeRef.current < 3000) return;
+        syncLatestCatalog();
       }
-    }, 30000);
+    }, 3500);
 
     return () => {
       if (channel) channel.close();
       window.removeEventListener('storage', handleStorage);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
       clearInterval(pollInterval);
     };
-  }, [adminUser, fetchAdminData, fetchPublicData]);
+  }, [syncLatestCatalog]);
 
   // Derived Public Data: only published products and enabled categories
   const publicCategories = useMemo(() => {
@@ -364,6 +386,8 @@ export function StoreProvider({ children }) {
 
   // --- PRODUCT ACTIONS (Backed by Backend API with Instant Optimistic Updates) ---
 
+  // --- PRODUCT ACTIONS (Backed by Backend API with Instant Optimistic Updates) ---
+
   const addProduct = async (productInput) => {
     try {
       const payload = {
@@ -388,8 +412,13 @@ export function StoreProvider({ children }) {
 
       const res = await api.createProduct(payload);
       if (res.product) {
-        setProducts((prev) => [res.product, ...prev]);
+        setProducts((prev) => {
+          const next = [res.product, ...prev.filter((p) => p.id !== res.product.id)];
+          try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+          return next;
+        });
         notifyCatalogChanged();
+        fetchAdminData(true);
         return { success: true, product: res.product };
       }
       return { success: false, error: 'Failed to create product' };
@@ -401,16 +430,18 @@ export function StoreProvider({ children }) {
   const updateProduct = async (id, updatedFields) => {
     try {
       // 1. Instant Optimistic State Update in UI (0ms delay)
-      setProducts((prev) =>
-        prev.map((p) => {
+      setProducts((prev) => {
+        const next = prev.map((p) => {
           if (p.id !== id) return p;
           return {
             ...p,
             ...updatedFields,
             updatedAt: new Date().toISOString(),
           };
-        })
-      );
+        });
+        try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+        return next;
+      });
 
       const payload = { ...updatedFields };
       if (payload.priceValue !== undefined) {
@@ -426,16 +457,19 @@ export function StoreProvider({ children }) {
       const res = await api.updateProduct(id, payload);
       if (res.product) {
         // Sync full normalized product from server without re-fetching all items
-        setProducts((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, ...res.product } : p))
-        );
+        setProducts((prev) => {
+          const next = prev.map((p) => (p.id === id ? { ...p, ...res.product } : p));
+          try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+          return next;
+        });
         notifyCatalogChanged();
+        fetchAdminData(true);
         return { success: true, product: res.product };
       }
       return { success: false, error: 'Failed to update product' };
     } catch (err) {
       // On failure, rollback by refreshing
-      await fetchAdminData();
+      await fetchAdminData(true);
       return { success: false, error: err.message || 'Error updating product' };
     }
   };
@@ -443,12 +477,17 @@ export function StoreProvider({ children }) {
   const deleteProduct = async (id) => {
     try {
       // Optimistic delete (0ms)
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setProducts((prev) => {
+        const next = prev.filter((p) => p.id !== id);
+        try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+        return next;
+      });
       await api.deleteProduct(id);
       notifyCatalogChanged();
+      fetchAdminData(true);
       return { success: true };
     } catch (err) {
-      await fetchAdminData();
+      await fetchAdminData(true);
       return { success: false, error: err.message || 'Error deleting product' };
     }
   };
@@ -458,17 +497,25 @@ export function StoreProvider({ children }) {
       const target = products.find((p) => p.id === id);
       const newStatus = overrideStatus || (target?.status === 'published' ? 'draft' : 'published');
       // Optimistic toggle (0ms)
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
-      );
+      setProducts((prev) => {
+        const next = prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p));
+        try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+        return next;
+      });
       const res = await api.togglePublish(id, newStatus);
       if (res.product) {
+        setProducts((prev) => {
+          const next = prev.map((p) => (p.id === id ? { ...p, ...res.product } : p));
+          try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+          return next;
+        });
         notifyCatalogChanged();
+        fetchAdminData(true);
         return { success: true, product: res.product };
       }
       return { success: false };
     } catch (err) {
-      await fetchAdminData();
+      await fetchAdminData(true);
       return { success: false, error: err.message };
     }
   };
@@ -478,17 +525,25 @@ export function StoreProvider({ children }) {
       const target = products.find((p) => p.id === id);
       const nextFeatured = !target?.isFeatured;
       // Optimistic toggle (0ms)
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isFeatured: nextFeatured } : p))
-      );
+      setProducts((prev) => {
+        const next = prev.map((p) => (p.id === id ? { ...p, isFeatured: nextFeatured } : p));
+        try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+        return next;
+      });
       const res = await api.updateProduct(id, { isFeatured: nextFeatured });
       if (res.product) {
+        setProducts((prev) => {
+          const next = prev.map((p) => (p.id === id ? { ...p, ...res.product } : p));
+          try { localStorage.setItem('curator_cached_products', JSON.stringify(next)); } catch {}
+          return next;
+        });
         notifyCatalogChanged();
+        fetchAdminData(true);
         return { success: true, product: res.product };
       }
       return { success: false };
     } catch (err) {
-      await fetchAdminData();
+      await fetchAdminData(true);
       return { success: false, error: err.message };
     }
   };
@@ -506,7 +561,7 @@ export function StoreProvider({ children }) {
 
       const res = await api.createCategory(payload);
       if (res.category) {
-        await fetchAdminData();
+        await fetchAdminData(true);
         notifyCatalogChanged();
         return { success: true, category: res.category };
       }
@@ -520,7 +575,7 @@ export function StoreProvider({ children }) {
     try {
       const res = await api.updateCategory(id, updatedFields);
       if (res.category) {
-        await fetchAdminData();
+        await fetchAdminData(true);
         notifyCatalogChanged();
         return { success: true, category: res.category };
       }
@@ -533,7 +588,7 @@ export function StoreProvider({ children }) {
   const deleteCategory = async (id) => {
     try {
       await api.deleteCategory(id);
-      await fetchAdminData();
+      await fetchAdminData(true);
       notifyCatalogChanged();
       return { success: true };
     } catch (err) {
@@ -544,7 +599,7 @@ export function StoreProvider({ children }) {
   const deleteCategoryWithReassignment = async (categoryIdToDelete, reassignToCategoryId) => {
     try {
       await api.deleteCategory(categoryIdToDelete, reassignToCategoryId);
-      await fetchAdminData();
+      await fetchAdminData(true);
       notifyCatalogChanged();
       return { success: true };
     } catch (err) {
@@ -571,18 +626,23 @@ export function StoreProvider({ children }) {
 
     await updateCategory(currentCat.id, { order: adjacentCat.order || 0 });
     await updateCategory(adjacentCat.id, { order: currentCat.order || 0 });
-    await fetchAdminData();
+    await fetchAdminData(true);
     notifyCatalogChanged();
   };
 
   const updateSettings = async (newSettings) => {
     // 1. Instant optimistic update in React state
-    setSettings((prev) => ({ ...prev, ...newSettings }));
+    setSettings((prev) => {
+      const next = { ...prev, ...newSettings };
+      try { localStorage.setItem('curator_cached_settings', JSON.stringify(next)); } catch {}
+      return next;
+    });
     try {
       // 2. Persist to Express backend and data/settings.json
       const res = await api.updateSettings(newSettings);
       if (res?.settings) {
         setSettings(res.settings);
+        try { localStorage.setItem('curator_cached_settings', JSON.stringify(res.settings)); } catch {}
       }
       notifyCatalogChanged();
       return { success: true, settings: res?.settings };
@@ -614,6 +674,13 @@ export function StoreProvider({ children }) {
     URL.revokeObjectURL(url);
   };
 
+  const refreshCatalog = useCallback(async () => {
+    if (adminUser) {
+      return await fetchAdminData(false);
+    }
+    return await fetchPublicData(false);
+  }, [adminUser, fetchAdminData, fetchPublicData]);
+
   const value = {
     products,
     categories,
@@ -641,7 +708,8 @@ export function StoreProvider({ children }) {
     reorderCategories,
     updateSettings,
     exportCatalogJson,
-    refreshCatalog: adminUser ? fetchAdminData : fetchPublicData,
+    refreshCatalog,
+    syncLatestCatalog,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

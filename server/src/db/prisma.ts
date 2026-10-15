@@ -12,7 +12,7 @@ export const prisma =
     log: env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
-if (env.NODE_ENV !== 'production') {
+if (!global.__prismaInstance) {
   global.__prismaInstance = prisma;
 }
 

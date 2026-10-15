@@ -10,10 +10,15 @@ class ApiError extends Error {
 }
 
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
+  const isGet = !options.method || options.method === 'GET';
+  const sep = endpoint.includes('?') ? '&' : '?';
+  const finalEndpoint = isGet ? `${endpoint}${sep}_t=${Date.now()}` : endpoint;
+  const url = `${API_BASE}${finalEndpoint}`;
   const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('curator_token') : null;
   const headers = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
     ...(storedToken ? { Authorization: `Bearer ${storedToken}` } : {}),
     ...(options.headers || {}),
   };
@@ -21,6 +26,7 @@ async function request(endpoint, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers,
+    cache: 'no-store', // Guarantees zero stale caching in browser
     credentials: 'include', // Ensures HttpOnly auth cookies are sent and received
   });
 
