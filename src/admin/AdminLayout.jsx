@@ -481,8 +481,6 @@ export default function AdminLayout({ onNavigateToStorefront }) {
                 adminUser={store.adminUser}
                 onUpdateSettings={store.updateSettings}
                 onUpdateAdminCredentials={store.updateAdminCredentials}
-                onResetToDefaults={store.resetToDefaults}
-                onExportCatalog={store.exportCatalogJson}
                 showToast={showToast}
               />
             )}

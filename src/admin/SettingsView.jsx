@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings,
-  Download,
-  RotateCcw,
   ShieldAlert,
   Save,
   CheckCircle2,
   AlertTriangle,
-  FileCode,
   Tag,
   Key,
   Lock,
@@ -22,8 +19,6 @@ export default function SettingsView({
   adminUser,
   onUpdateSettings,
   onUpdateAdminCredentials,
-  onResetToDefaults,
-  onExportCatalog,
   showToast,
 }) {
   const [formData, setFormData] = useState({
@@ -36,7 +31,6 @@ export default function SettingsView({
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   // Admin Credentials State
   const [credData, setCredData] = useState({
@@ -148,15 +142,6 @@ export default function SettingsView({
     } finally {
       setIsSavingCreds(false);
     }
-  };
-
-  const handleConfirmReset = () => {
-    onResetToDefaults();
-    setIsResetConfirmOpen(false);
-    showToast({
-      title: 'Storefront Reset',
-      message: 'All products and categories have been restored to initial fixtures.',
-    });
   };
 
   return (
@@ -441,92 +426,6 @@ export default function SettingsView({
           </div>
         </form>
       </div>
-
-      {/* Catalog Backup & Export */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-        <div className="border-b border-neutral-100 pb-3">
-          <h3 className="text-sm font-bold text-neutral-900">Catalog Data Tools</h3>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            Export JSON backup or reset local database state
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-          {/* Export JSON */}
-          <div className="p-4 rounded-xl border border-neutral-200/80 bg-neutral-50/50 flex flex-col justify-between space-y-3">
-            <div>
-              <div className="flex items-center space-x-2 text-neutral-900 font-semibold text-xs">
-                <FileCode size={16} />
-                <span>Export Catalog JSON</span>
-              </div>
-              <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
-                Download a complete standalone JSON backup of all products, categories, and settings.
-              </p>
-            </div>
-            <button
-              onClick={onExportCatalog}
-              className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-800 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors shadow-sm self-start"
-            >
-              <Download size={13} />
-              <span>Download .json file</span>
-            </button>
-          </div>
-
-          {/* Reset to Seed Fixtures */}
-          <div className="p-4 rounded-xl border border-rose-200/60 bg-rose-50/30 flex flex-col justify-between space-y-3">
-            <div>
-              <div className="flex items-center space-x-2 text-rose-900 font-semibold text-xs">
-                <RotateCcw size={16} />
-                <span>Reset to Seed Data</span>
-              </div>
-              <p className="text-[11px] text-rose-700/80 mt-1 leading-relaxed">
-                Restore the catalog to initial Phase 1 mock specimens and default categories.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsResetConfirmOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 transition-colors shadow-sm self-start"
-            >
-              <RotateCcw size={13} />
-              <span>Reset Database</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Reset Confirmation Modal */}
-      {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-neutral-200 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertTriangle size={24} />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-neutral-900">Reset Entire Store Catalog?</h3>
-              <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-                This will reset all your custom products and restored categories back to the initial
-                verified fixtures. This action clears browser storage and cannot be undone.
-              </p>
-            </div>
-
-            <div className="pt-2 flex justify-end space-x-2.5">
-              <button
-                onClick={() => setIsResetConfirmOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReset}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm"
-              >
-                Confirm Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
