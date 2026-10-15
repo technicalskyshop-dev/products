@@ -14,6 +14,7 @@ import {
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
+  Plus,
 } from 'lucide-react';
 import DashboardOverview from './DashboardOverview';
 import ProductManagement from './ProductManagement';
@@ -87,13 +88,16 @@ export default function AdminLayout({ onNavigateToStorefront }) {
   const handleOpenAddProductFromOverview = () => {
     setActiveTab('products');
     setIsAddModalTriggered(true);
+    setMobileSidebarOpen(false);
   };
 
   return (
     <div className="h-screen w-screen bg-slate-100 flex flex-row text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white antialiased overflow-hidden">
-      {/* Admin Sidebar (Permanently Fixed in Place) */}
+      {/* ========================================================================= */}
+      {/* DESKTOP SIDEBAR (Visible on md and larger screens)                        */}
+      {/* ========================================================================= */}
       <aside
-        className={`h-screen bg-neutral-950 text-neutral-300 flex flex-col justify-between shrink-0 transition-all duration-200 z-30 select-none overflow-y-auto ${
+        className={`hidden md:flex h-screen bg-neutral-950 text-neutral-300 flex-col justify-between shrink-0 transition-all duration-200 z-30 select-none overflow-y-auto ${
           isSidebarCollapsed ? 'w-16 p-2 sm:p-2.5' : 'w-56 sm:w-60 p-4 sm:p-5'
         }`}
       >
@@ -263,15 +267,129 @@ export default function AdminLayout({ onNavigateToStorefront }) {
         </div>
       </aside>
 
-      {/* Main Content Area (Independently Scrollable Right Pane) */}
+      {/* ========================================================================= */}
+      {/* MOBILE SLIDE-OVER DRAWER (Visible on < md when mobileSidebarOpen is true)  */}
+      {/* ========================================================================= */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-neutral-950/75 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+
+          {/* Drawer content */}
+          <div className="relative w-[280px] max-w-[80vw] bg-neutral-950 text-neutral-200 h-full p-5 flex flex-col justify-between shadow-2xl z-10 border-r border-white/10 animate-in slide-in-from-left duration-200">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-white text-neutral-950 font-black text-xs flex items-center justify-center shadow-sm">
+                    TS
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-white tracking-tight leading-tight">
+                      {store.settings?.storeName || 'TechnicalSky'}
+                    </h2>
+                    <span className="text-[10px] text-neutral-400 font-medium">Console</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Navigation links */}
+              <nav className="mt-5 space-y-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleTabChange(item.id)}
+                      className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-white text-neutral-950 shadow-sm'
+                          : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon size={18} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.count !== undefined && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                            isActive ? 'bg-neutral-950 text-white' : 'bg-white/10 text-neutral-300'
+                          }`}
+                        >
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Mobile Drawer Bottom */}
+            <div className="pt-4 border-t border-white/10 space-y-2.5">
+              <button
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  onNavigateToStorefront();
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-neutral-300 bg-white/5 hover:bg-white/10 hover:text-white transition-all border border-white/5"
+              >
+                <div className="flex items-center space-x-2">
+                  <Store size={15} />
+                  <span>Return to Storefront</span>
+                </div>
+                <ExternalLink size={13} className="text-neutral-400" />
+              </button>
+
+              <button
+                onClick={store.logout}
+                className="w-full flex items-center space-x-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+              >
+                <LogOut size={14} />
+                <span>Sign Out ({store.adminUser?.email?.split('@')[0]})</span>
+              </button>
+
+              <div className="flex items-center space-x-2 px-1 text-[11px] text-neutral-500 pt-1">
+                <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
+                <span>Database · Connected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MAIN CONTENT AREA                                                         */}
+      {/* ========================================================================= */}
       <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden bg-slate-100">
-        {/* Top Header Bar with Sidebar Toggle (Pinned at Top of Right Pane) */}
-        <header className="bg-white border-b border-neutral-200/80 px-4 sm:px-8 py-3 sm:py-3.5 flex items-center justify-between shrink-0 shadow-xs z-10">
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-neutral-200/80 px-3.5 sm:px-6 md:px-8 py-3 flex items-center justify-between shrink-0 shadow-xs z-10">
           <div className="flex items-center space-x-2 text-xs font-medium text-neutral-500 min-w-0">
-            {/* Top Bar Sidebar Toggle Button */}
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-1.5 -ml-1 mr-1 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu size={20} />
+            </button>
+
+            {/* Desktop Sidebar Toggle Button */}
             <button
               onClick={toggleSidebar}
-              className="p-1.5 -ml-1 sm:-ml-2 mr-1 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer flex items-center shrink-0"
+              className="hidden md:flex p-1.5 -ml-1 sm:-ml-2 mr-1 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer items-center shrink-0"
               title={isSidebarCollapsed ? 'Expand sidebar (Full view)' : 'Collapse sidebar (Slim icon view)'}
             >
               {isSidebarCollapsed ? (
@@ -287,7 +405,7 @@ export default function AdminLayout({ onNavigateToStorefront }) {
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 sm:px-2.5 py-1 rounded-full whitespace-nowrap">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 sm:px-2.5 py-1 rounded-full whitespace-nowrap">
               ● Live Sync
             </span>
 
@@ -298,6 +416,7 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             <button
               onClick={onNavigateToStorefront}
               className="inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200/70 transition-colors cursor-pointer"
+              title="View Storefront"
             >
               <Store size={13} />
               <span className="hidden sm:inline">Storefront</span>
@@ -305,18 +424,18 @@ export default function AdminLayout({ onNavigateToStorefront }) {
 
             <button
               onClick={store.logout}
-              className="inline-flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut size={13} />
-              <span className="hidden sm:inline">Sign Out</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </header>
 
         {/* Tab View Container - Independently Scrollable */}
-        <main className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-8 w-full custom-scroll overscroll-contain">
-          <div className="max-w-7xl w-full mx-auto pb-12">
+        <main className="flex-1 overflow-y-auto min-h-0 p-3.5 sm:p-6 md:p-8 pb-24 md:pb-12 w-full custom-scroll overscroll-contain">
+          <div className="max-w-7xl w-full mx-auto">
             {activeTab === 'overview' && (
               <DashboardOverview
                 products={store.products}
@@ -370,6 +489,68 @@ export default function AdminLayout({ onNavigateToStorefront }) {
           </div>
         </main>
       </div>
+
+      {/* ========================================================================= */}
+      {/* MOBILE STICKY BOTTOM NAVIGATION BAR (< md)                                */}
+      {/* ========================================================================= */}
+      <nav
+        aria-label="Mobile Bottom Navigation"
+        className="md:hidden fixed bottom-0 inset-x-0 bg-neutral-950/95 backdrop-blur-xl border-t border-white/10 z-40 px-2 py-1.5 flex items-center justify-around shadow-[0_-8px_25px_rgba(0,0,0,0.6)]"
+      >
+        <button
+          onClick={() => handleTabChange('overview')}
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'overview' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+          }`}
+        >
+          <LayoutDashboard size={18} />
+          <span className="text-[10px] font-medium mt-0.5">Overview</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('products')}
+          className={`relative flex flex-col items-center py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'products' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+          }`}
+        >
+          <Package size={18} />
+          <span className="text-[10px] font-medium mt-0.5">Products</span>
+          {store.products.length > 0 && (
+            <span className="absolute top-0 right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-purple-600 text-white text-[9px] font-bold flex items-center justify-center">
+              {store.products.length}
+            </span>
+          )}
+        </button>
+
+        {/* Quick Add Floating Center Action */}
+        <button
+          onClick={handleOpenAddProductFromOverview}
+          className="flex items-center justify-center -mt-4 w-11 h-11 rounded-full bg-white text-neutral-950 shadow-[0_4px_16px_rgba(255,255,255,0.35)] active:scale-90 transition-transform cursor-pointer border-2 border-neutral-950"
+          title="Add New Product"
+          aria-label="Add New Product"
+        >
+          <Plus size={20} className="stroke-[2.5]" />
+        </button>
+
+        <button
+          onClick={() => handleTabChange('settings')}
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'settings' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+          }`}
+        >
+          <Settings size={18} />
+          <span className="text-[10px] font-medium mt-0.5">Settings</span>
+        </button>
+
+        <button
+          onClick={onNavigateToStorefront}
+          className="flex flex-col items-center py-1 px-2.5 rounded-xl text-neutral-500 hover:text-white transition-all cursor-pointer"
+          title="Return to Storefront"
+        >
+          <Store size={18} />
+          <span className="text-[10px] font-medium mt-0.5">Store</span>
+        </button>
+      </nav>
 
       {/* Global Toast Notification */}
       <ToastNotification toast={toast} onClose={() => setToast(null)} />

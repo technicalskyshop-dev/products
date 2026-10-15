@@ -69,11 +69,11 @@ export default function DashboardOverview({
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
       {/* Top Welcome & Quick Actions Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-neutral-200/80">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">
             Storefront Telemetry
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
@@ -81,40 +81,40 @@ export default function DashboardOverview({
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={onOpenStorefront}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm cursor-pointer"
           >
             <Store size={14} />
-            <span>View 4-Card Store</span>
+            <span>Storefront</span>
           </button>
 
           <button
             onClick={onOpenAddProduct}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm cursor-pointer"
           >
             <Plus size={14} />
-            <span>Add New Product</span>
+            <span>Add Product</span>
           </button>
         </div>
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Total Products */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-200/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">
               Total Catalog
             </span>
-            <div className="w-8 h-8 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
-              <Package size={16} />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+              <Package size={15} />
             </div>
           </div>
-          <div className="mt-4">
-            <div className="text-2xl font-bold text-neutral-900">{totalProducts}</div>
-            <span className="text-[11px] text-neutral-400 mt-0.5 block">Supabase cloud items</span>
+          <div className="mt-3 sm:mt-4">
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900">{totalProducts}</div>
+            <span className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 block truncate">Supabase cloud items</span>
           </div>
         </div>
 

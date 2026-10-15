@@ -198,8 +198,8 @@ export default function SettingsView({
       </div>
 
       {/* General Settings Form */}
-      <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 rounded-2xl border border-neutral-200/80 shadow-sm space-y-6">
-        <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
+      <form onSubmit={handleSave} className="bg-white p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl border border-neutral-200/80 shadow-sm space-y-6">
+        <div className="border-b border-neutral-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-neutral-900">Brand Identity & Affiliates</h3>
             <p className="text-xs text-neutral-400 mt-0.5">
@@ -209,7 +209,7 @@ export default function SettingsView({
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
           >
             <Save size={14} />
             <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
@@ -433,7 +433,7 @@ export default function SettingsView({
             <button
               type="submit"
               disabled={isSavingCreds}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-neutral-900 hover:bg-black transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-neutral-900 hover:bg-black transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
               <ShieldCheck size={14} />
               <span>{isSavingCreds ? 'Updating Credentials...' : 'Update Admin Credentials'}</span>

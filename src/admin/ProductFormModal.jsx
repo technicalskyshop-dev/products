@@ -361,11 +361,11 @@ export default function ProductFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-neutral-950/75 backdrop-blur-md overflow-hidden animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-neutral-950/75 backdrop-blur-md overflow-hidden animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full text-left shadow-2xl border border-neutral-200/90 flex flex-col h-[92vh] max-h-[850px] overflow-hidden"
+        className="relative bg-white rounded-none sm:rounded-3xl max-w-3xl w-full text-left shadow-2xl border-0 sm:border sm:border-neutral-200/90 flex flex-col h-full sm:h-[92vh] sm:max-h-[850px] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -927,42 +927,42 @@ export default function ProductFormModal({
           </form>
 
           {/* Footer Actions */}
-          <div className="px-6 sm:px-8 py-3.5 sm:py-4 border-t border-neutral-100 bg-neutral-50/70 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="px-4 sm:px-8 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
             {isEditing ? (
               <button
                 type="button"
                 onClick={() => {
                   onDelete?.(product);
                 }}
-                className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200/90 shadow-xs transition-colors cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200/90 shadow-xs transition-colors cursor-pointer"
                 title="Remove this product from catalog"
               >
                 <Trash2 size={14} />
                 <span>Remove Product</span>
               </button>
-            ) : <div />}
+            ) : <div className="hidden sm:block" />}
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
               {Object.keys(errors).length > 0 && (
-                <span className="text-[11px] font-medium text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg flex items-center space-x-1">
+                <span className="hidden sm:flex text-[11px] font-medium text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg items-center space-x-1">
                   <AlertCircle size={12} />
-                  <span>Check highlighted fields</span>
+                  <span>Check fields</span>
                 </span>
               )}
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60 transition-colors cursor-pointer"
+                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-semibold text-neutral-600 hover:text-neutral-900 bg-neutral-100 sm:bg-transparent hover:bg-neutral-200/60 transition-colors cursor-pointer text-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                className="flex-1 sm:flex-initial px-5 sm:px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-neutral-900 hover:bg-black transition-colors shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <Check size={14} />
-                <span>{isEditing ? 'Save Product Changes' : 'Publish Product to Store'}</span>
+                <span>{isEditing ? 'Save Changes' : 'Publish Product'}</span>
               </button>
             </div>
           </div>
