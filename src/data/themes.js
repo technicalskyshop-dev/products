@@ -14,7 +14,7 @@ export const PRESET_THEMES = [
     mode: 'light',
     category: 'light',
     previewGradient: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
-    tag: 'Active Default',
+    tag: 'Light Blueprint',
     accentColor: '#171717',
   },
   {

@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Smartphone,
   Monitor,
-  CheckCircle,
   Zap,
 } from 'lucide-react';
 import { PRESET_THEMES } from '../data/themes';
@@ -226,33 +225,32 @@ export default function AppearanceView({
       {/* ========================================================================= */}
       {/* 1. TOP ACTIVE THEME STATUS HERO BANNER                                    */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-neutral-900 text-white p-6 sm:p-8 shadow-xl border border-white/10">
-        {/* Subtle Ambient Glow */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-neutral-950 text-white p-6 sm:p-7 shadow-xl border border-white/10">
+        {/* Subtle Ambient Radial Glows */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-600/25 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-600/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center space-x-4">
-            {/* Live Active Wallpaper Thumbnail */}
+          <div className="flex items-center space-x-4 sm:space-x-5">
+            {/* Live Active Wallpaper Preview Thumbnail */}
             <div
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-white/20 shadow-md relative bg-neutral-800"
+              className="w-24 sm:w-32 h-16 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-white/20 shadow-lg relative bg-neutral-900 group"
               style={{
                 backgroundImage: effectiveBg ? `url('${effectiveBg}')` : currentPreset.previewGradient,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}
             >
-              <div className="absolute inset-0 bg-black/20" />
-              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-neutral-900" />
+              <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors" />
             </div>
 
             <div>
               <div className="flex items-center space-x-2.5">
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Live Active Theme</span>
                 </span>
-                <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/80">
+                <span className="text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
                   {isCurrentDark ? 'Dark Mode' : 'Light Mode'}
                 </span>
               </div>
@@ -260,39 +258,37 @@ export default function AppearanceView({
               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight mt-1 text-white">
                 {currentPreset.name}
               </h1>
-              <p className="text-xs sm:text-sm text-neutral-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-neutral-400 mt-0.5 max-w-xl">
                 {currentPreset.subtitle} — Real-time auto-synced across all visitors.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0">
-            {onNavigateToStorefront && (
-              <button
-                type="button"
-                onClick={onNavigateToStorefront}
-                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-white text-neutral-950 text-xs sm:text-sm font-bold shadow-md hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
-              >
-                <Eye size={15} />
-                <span>View Live Storefront</span>
-              </button>
-            )}
+          <div className="flex items-center space-x-2.5 self-start md:self-center shrink-0">
+            <button
+              type="button"
+              onClick={() => window.open('/', '_blank')}
+              className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-white text-neutral-950 text-xs sm:text-sm font-bold shadow-md hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+            >
+              <ExternalLink size={14} />
+              <span>Open Storefront in New Tab</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. PRESET THEMES GRID WITH INSTANT 1-CLICK APPLY                         */}
+      {/* 2. PRESET THEMES GRID WITH CLEAN, CRISP WALLPAPER TILES                   */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-neutral-200/80">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight flex items-center space-x-2">
               <Sparkles size={18} className="text-indigo-600" />
               <span>Curated Theme Collection</span>
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Click any theme card or &quot;Activate Theme&quot; to apply instantly to your website with 0ms delay.
+              Click any theme or &quot;Activate Theme&quot; to apply instantly to your website with 0ms delay.
             </p>
           </div>
 
@@ -300,9 +296,9 @@ export default function AppearanceView({
           <div className="flex items-center space-x-1.5 bg-neutral-100 p-1 rounded-xl shrink-0 overflow-x-auto">
             {[
               { id: 'all', label: 'All Themes', count: PRESET_THEMES.length },
-              { id: 'light', label: 'Light', count: PRESET_THEMES.filter((t) => t.category === 'light').length },
-              { id: 'dark', label: 'Dark', count: PRESET_THEMES.filter((t) => t.category === 'dark').length },
-              { id: 'custom', label: 'Custom' },
+              { id: 'light', label: '☀️ Light', count: PRESET_THEMES.filter((t) => t.category === 'light').length },
+              { id: 'dark', label: '🌙 Dark', count: PRESET_THEMES.filter((t) => t.category === 'dark').length },
+              { id: 'custom', label: '🎨 Custom' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -321,7 +317,7 @@ export default function AppearanceView({
         </div>
 
         {/* Theme Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredThemes.map((theme) => {
             const isSelected = activeTheme === theme.id;
             const isApplying = isApplyingThemeId === theme.id;
@@ -330,83 +326,70 @@ export default function AppearanceView({
               <div
                 key={theme.id}
                 onClick={() => handleActivateTheme(theme.id)}
-                className={`group relative rounded-2xl p-3.5 sm:p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                className={`group relative rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
-                    ? 'border-indigo-600 bg-indigo-50/20 shadow-md ring-2 ring-indigo-500/20'
+                    ? 'border-indigo-600 bg-indigo-50/25 shadow-lg ring-2 ring-indigo-500/20'
                     : 'border-neutral-200/90 hover:border-neutral-300 bg-white hover:shadow-md hover:-translate-y-0.5'
                 }`}
               >
-                {/* Visual Wallpaper Preview Swatch */}
-                <div
-                  className="w-full h-32 sm:h-36 rounded-xl overflow-hidden relative flex flex-col justify-between p-3 shadow-inner border border-black/5"
-                  style={{
-                    background: theme.previewGradient,
-                    backgroundImage: theme.desktopBg ? `url('${theme.desktopBg}')` : theme.previewGradient,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                >
-                  {/* Floating Badges */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md shadow-xs ${
-                        theme.mode === 'dark'
-                          ? 'bg-black/70 text-white border border-white/10'
-                          : 'bg-white/85 text-neutral-900 border border-black/5'
-                      }`}
-                    >
-                      {theme.mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                    </span>
-
-                    {isSelected ? (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center space-x-1 shadow-sm">
-                        <Check size={11} className="stroke-[3]" />
-                        <span>Active</span>
-                      </span>
-                    ) : (
-                      <span className="text-[9.5px] font-semibold text-white/90 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                        {theme.tag}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Simulated Floating Glass Card in Preview */}
+                <div>
+                  {/* Clean, Full-Bleed Wallpaper Preview Tile (NO awkward overlays) */}
                   <div
-                    className={`rounded-lg p-2 flex items-center space-x-2 border shadow-xs transition-transform group-hover:scale-[1.02] ${
-                      theme.mode === 'dark'
-                        ? 'bg-neutral-900/70 backdrop-blur-md border-white/10 text-white'
-                        : 'bg-white/80 backdrop-blur-md border-white/90 text-neutral-900'
-                    }`}
+                    className="w-full aspect-[16/10] rounded-xl overflow-hidden relative shadow-inner border border-black/5 flex flex-col justify-between p-3 bg-neutral-900"
+                    style={{
+                      background: theme.previewGradient,
+                      backgroundImage: theme.desktopBg ? `url('${theme.desktopBg}')` : theme.previewGradient,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
                   >
-                    <div className="w-6 h-6 rounded-md bg-white shrink-0 shadow-2xs border border-black/5 flex items-center justify-center">
-                      <Sparkles size={11} className="text-amber-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="h-2 w-14 bg-current opacity-70 rounded-full mb-1" />
-                      <div className="h-1.5 w-9 bg-current opacity-40 rounded-full" />
+                    {/* Top Overlay Badges */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs ${
+                          theme.mode === 'dark'
+                            ? 'bg-black/70 text-white border border-white/10'
+                            : 'bg-white/90 text-neutral-900 border border-black/5'
+                        }`}
+                      >
+                        {theme.mode === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                      </span>
+
+                      {isSelected ? (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold flex items-center space-x-1 shadow-md animate-fade-in">
+                          <Check size={12} className="stroke-[3]" />
+                          <span>Active</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-white/90 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                          {theme.tag}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                {/* Theme Title & Action Bar */}
-                <div className="mt-3.5 flex flex-col justify-between flex-1">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-neutral-900 tracking-tight">
-                        {theme.name}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
+                  {/* Theme Info */}
+                  <div className="mt-3.5">
+                    <h3 className="text-sm sm:text-base font-bold text-neutral-900 tracking-tight">
+                      {theme.name}
+                    </h3>
+                    <p className="text-xs font-medium text-neutral-400 mt-0.5">
+                      {theme.subtitle}
+                    </p>
+                    <p className="text-xs text-neutral-600 mt-1 line-clamp-2 leading-relaxed">
                       {theme.description}
                     </p>
                   </div>
+                </div>
 
-                  {/* 1-Click Activate Button */}
-                  <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-neutral-400">
-                      {theme.subtitle}
-                    </span>
-
+                {/* Bottom Full-Width Action Button */}
+                <div className="mt-4 pt-3 border-t border-neutral-100">
+                  {isSelected ? (
+                    <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/90 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-2xs">
+                      <Check size={14} className="stroke-[3] text-emerald-600" />
+                      <span>Currently Active on Store</span>
+                    </div>
+                  ) : (
                     <button
                       type="button"
                       disabled={isApplying}
@@ -414,22 +397,16 @@ export default function AppearanceView({
                         e.stopPropagation();
                         handleActivateTheme(theme.id);
                       }}
-                      className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                          : 'bg-neutral-900 text-white hover:bg-indigo-600 active:scale-95 shadow-xs'
-                      }`}
+                      className="w-full py-2.5 px-3 rounded-xl bg-neutral-900 hover:bg-indigo-600 active:scale-[0.98] text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
                     >
                       {isApplying ? (
-                        <RefreshCw size={12} className="animate-spin" />
-                      ) : isSelected ? (
-                        <Check size={12} className="stroke-[3]" />
+                        <RefreshCw size={13} className="animate-spin" />
                       ) : (
-                        <Zap size={12} />
+                        <Zap size={13} />
                       )}
-                      <span>{isApplying ? 'Applying...' : isSelected ? 'Active on Store' : 'Activate Theme'}</span>
+                      <span>{isApplying ? 'Applying Theme...' : 'Activate Theme'}</span>
                     </button>
-                  </div>
+                  )}
                 </div>
               </div>
             );

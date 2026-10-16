@@ -408,7 +408,9 @@ export default function AdminLayout({ onNavigateToStorefront }) {
 
             <span className="hidden sm:inline">Admin</span>
             <ChevronRight size={14} className="text-neutral-400 hidden sm:inline" />
-            <span className="text-neutral-900 font-semibold capitalize truncate">{activeTab}</span>
+            <span className="text-neutral-900 font-semibold capitalize truncate">
+              {activeTab === 'appearance' ? 'Theme & Style' : activeTab}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
