@@ -62,9 +62,12 @@ export default function App() {
 
   // Route: Public Storefront (Full-width 4-column modern card grid)
   return (
-    <div className="min-h-screen bg-[#DFDAEB] p-2.5 sm:p-4 md:p-6 lg:p-7 flex flex-col justify-start">
-      {/* Outer Page Frame with Rounded Outer Corners, Soft Lavender Background */}
-      <div className="w-full max-w-[1680px] mx-auto min-h-screen md:min-h-0 md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)] rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col relative shadow-sm border border-black/[0.03] canvas-bg">
+    <div
+      className="min-h-screen bg-[#E2E4E8] bg-cover bg-center bg-fixed p-2.5 sm:p-4 md:p-6 lg:p-7 flex flex-col justify-start"
+      style={{ backgroundImage: "url('/tech-bg.jpg')" }}
+    >
+      {/* Outer Page Frame with Rounded Outer Corners, Brushed Titanium Dot-Matrix Canvas */}
+      <div className="w-full max-w-[1680px] mx-auto min-h-screen md:min-h-0 md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)] rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col relative shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/70 canvas-bg">
         
         {/* Top Navigation Header */}
         <Header

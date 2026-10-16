@@ -49,7 +49,7 @@ export default function ProductCard({ product }) {
         - Adapts seamlessly: 3 columns on mobile, 4 columns on desktop!
       */}
       <div
-        className="group relative flex flex-col w-full text-center select-none bg-white/70 hover:bg-white/90 backdrop-blur-xl rounded-[18px] sm:rounded-[24px] p-1.5 sm:p-2.5 md:p-3 border border-white/80 shadow-[0_8px_24px_rgba(100,80,140,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_36px_rgba(100,80,140,0.12)] hover:-translate-y-1.5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
+        className="group relative flex flex-col w-full text-center select-none bg-white/75 hover:bg-white/95 backdrop-blur-xl rounded-[18px] sm:rounded-[24px] p-1.5 sm:p-2.5 md:p-3 border border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
         onClick={handleCardClick}
       >
         {/* Subtle Specular Top Glass Highlight */}

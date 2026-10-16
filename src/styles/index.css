@@ -6,7 +6,7 @@
   html {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #171717;
-    background-color: #DFDAEB;
+    background-color: #E2E4E8;
   }
 }
 
@@ -29,16 +29,17 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Subtle gradient background utility */
+/* Subtle tech dot-matrix background utility */
 .canvas-bg {
-  background-color: #ECE7F5;
-  background-image: 
-    radial-gradient(ellipse 55% 55% at 0% 100%, rgba(248, 198, 222, 0.55) 0%, rgba(248, 198, 222, 0) 70%),
-    radial-gradient(circle at 100% 0%, rgba(235, 231, 245, 0.4) 0%, rgba(235, 231, 245, 0) 60%);
+  background-color: #E2E4E8;
+  background-image: url('/tech-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .pale-tile {
-  background-color: #F6F4FA;
+  background-color: #F3F4F6;
 }
 
 /* Custom subtle scrollbar */
@@ -128,7 +129,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, #F5F2F9 25%, #ECE7F5 50%, #F5F2F9 75%);
+  background: linear-gradient(90deg, #F1F3F5 25%, #E2E4E8 50%, #F1F3F5 75%);
   background-size: 200% 100%;
   animation: shimmerWave 1.8s infinite ease-in-out;
 }
