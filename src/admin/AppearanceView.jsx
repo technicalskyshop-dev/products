@@ -16,6 +16,8 @@ import {
   AlertCircle,
   Smartphone,
   Monitor,
+  CheckCircle,
+  Zap,
 } from 'lucide-react';
 import { PRESET_THEMES } from '../data/themes';
 import { api } from '../api/client';
@@ -33,10 +35,10 @@ export default function AppearanceView({
   const [glassBlur, setGlassBlur] = useState(settings?.glassBlur || 'medium');
   const [glassOpacity, setGlassOpacity] = useState(settings?.glassOpacity || 'medium');
 
+  const [selectedCategory, setSelectedCategory] = useState('all'); // 'all' | 'light' | 'dark' | 'custom'
   const [isUploadingDesktop, setIsUploadingDesktop] = useState(false);
   const [isUploadingMobile, setIsUploadingMobile] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isApplyingThemeId, setIsApplyingThemeId] = useState(null);
   const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
 
   const desktopFileInputRef = useRef(null);
@@ -54,14 +56,47 @@ export default function AppearanceView({
     }
   }, [settings]);
 
-  // Handle Preset Select
-  const handleSelectPreset = (presetId) => {
-    setActiveTheme(presetId);
-    const preset = PRESET_THEMES.find((p) => p.id === presetId);
+  // Instant 1-Click Activate Theme
+  const handleActivateTheme = async (themeId, overrideMode = null) => {
+    setIsApplyingThemeId(themeId);
+    setActiveTheme(themeId);
+
+    const preset = PRESET_THEMES.find((p) => p.id === themeId);
+    const effectiveMode = overrideMode || (preset && preset.mode !== 'custom' ? preset.mode : themeMode);
     if (preset && preset.mode !== 'custom') {
       setThemeMode(preset.mode);
     }
-    setSavedSuccess(false);
+
+    try {
+      const payload = {
+        activeTheme: themeId,
+        themeMode: effectiveMode,
+        glassBlur,
+        glassOpacity,
+        customBgUrl: customBgUrl.trim(),
+        customBgMobileUrl: customBgMobileUrl.trim(),
+      };
+
+      const res = await onUpdateSettings?.(payload);
+      if (res?.success) {
+        showToast?.({
+          title: 'Theme Activated Live!',
+          message: `"${preset?.name || 'Theme'}" is now live on technicalskystuff.com`,
+          type: 'success',
+        });
+      } else {
+        throw new Error(res?.error || 'Could not save theme');
+      }
+    } catch (err) {
+      console.error('Failed to activate theme:', err);
+      showToast?.({
+        title: 'Theme Activation Failed',
+        message: err.message || 'Please check your connection and try again',
+        type: 'error',
+      });
+    } finally {
+      setIsApplyingThemeId(null);
+    }
   };
 
   // Upload handler for custom background
@@ -69,12 +104,20 @@ export default function AppearanceView({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      showToast?.('Please upload a valid image file (JPG, PNG, WebP).', 'error');
+      showToast?.({
+        title: 'Invalid File',
+        message: 'Please upload a valid image file (JPG, PNG, WebP).',
+        type: 'error',
+      });
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      showToast?.('Image is too large. Max size is 15MB.', 'error');
+      showToast?.({
+        title: 'File Too Large',
+        message: 'Image size exceeds 15MB limit.',
+        type: 'error',
+      });
       return;
     }
 
@@ -103,20 +146,37 @@ export default function AppearanceView({
       }
 
       setActiveTheme('custom');
-      showToast?.(`${isMobile ? 'Mobile' : 'Desktop'} background uploaded successfully!`, 'success');
+
+      // Auto-save the uploaded wallpaper to settings
+      const payload = {
+        activeTheme: 'custom',
+        customBgUrl: isMobile ? customBgUrl : url,
+        customBgMobileUrl: isMobile ? url : customBgMobileUrl,
+        themeMode,
+        glassBlur,
+        glassOpacity,
+      };
+      await onUpdateSettings?.(payload);
+
+      showToast?.({
+        title: 'Wallpaper Uploaded & Activated!',
+        message: `${isMobile ? 'Mobile' : 'Desktop'} background is now active on your storefront!`,
+        type: 'success',
+      });
     } catch (err) {
       console.error('Background upload error:', err);
-      showToast?.('Failed to upload image. Please try again or paste image URL.', 'error');
+      showToast?.({
+        title: 'Upload Failed',
+        message: 'Could not upload image. Please try again or paste image URL.',
+        type: 'error',
+      });
     } finally {
       setUploading(false);
     }
   };
 
-  // Save changes to backend
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSavedSuccess(false);
-
+  // Save changes to custom configuration or glass sliders
+  const handleSaveCustomConfig = async () => {
     try {
       const payload = {
         activeTheme,
@@ -129,21 +189,31 @@ export default function AppearanceView({
 
       const res = await onUpdateSettings?.(payload);
       if (res?.success) {
-        setSavedSuccess(true);
-        showToast?.('Theme & appearance updated live on storefront!', 'success');
-        setTimeout(() => setSavedSuccess(false), 3000);
+        showToast?.({
+          title: 'Appearance Updated!',
+          message: 'Glass effects and theme adjustments saved live.',
+          type: 'success',
+        });
       } else {
         throw new Error(res?.error || 'Failed to update settings');
       }
     } catch (err) {
       console.error('Failed to save appearance settings:', err);
-      showToast?.('Could not save appearance settings. Please try again.', 'error');
-    } finally {
-      setIsSaving(false);
+      showToast?.({
+        title: 'Error Saving Settings',
+        message: err.message || 'Please try again.',
+        type: 'error',
+      });
     }
   };
 
-  // Determine current active preview background URL & dark mode
+  // Filtered preset themes by category
+  const filteredThemes = PRESET_THEMES.filter((t) => {
+    if (selectedCategory === 'all') return true;
+    return t.category === selectedCategory;
+  });
+
+  // Active theme object
   const currentPreset = PRESET_THEMES.find((p) => p.id === activeTheme) || PRESET_THEMES[0];
   const isCustom = activeTheme === 'custom';
   const effectiveBg = isCustom
@@ -153,86 +223,122 @@ export default function AppearanceView({
 
   return (
     <div className="space-y-6 pb-20 max-w-6xl mx-auto">
-      {/* View Header */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-neutral-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-              <Palette size={20} />
-            </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">
-              Theme & Appearance
-            </h1>
-          </div>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-1 max-w-2xl">
-            Switch between curated technical themes or upload custom wallpapers. Changes sync in real-time across the live website.
-          </p>
-        </div>
+      {/* ========================================================================= */}
+      {/* 1. TOP ACTIVE THEME STATUS HERO BANNER                                    */}
+      {/* ========================================================================= */}
+      <div className="relative overflow-hidden rounded-3xl bg-neutral-900 text-white p-6 sm:p-8 shadow-xl border border-white/10">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-600/20 blur-3xl pointer-events-none" />
 
-        <div className="flex items-center space-x-2.5 self-start sm:self-auto">
-          {onNavigateToStorefront && (
-            <button
-              onClick={onNavigateToStorefront}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center space-x-4">
+            {/* Live Active Wallpaper Thumbnail */}
+            <div
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-white/20 shadow-md relative bg-neutral-800"
+              style={{
+                backgroundImage: effectiveBg ? `url('${effectiveBg}')` : currentPreset.previewGradient,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
             >
-              <Eye size={14} />
-              <span>Preview Live</span>
-            </button>
-          )}
+              <div className="absolute inset-0 bg-black/20" />
+              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-neutral-900" />
+            </div>
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`inline-flex items-center space-x-2 px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white shadow-sm transition-all cursor-pointer ${
-              savedSuccess
-                ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'bg-neutral-900 hover:bg-neutral-800 active:scale-95'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isSaving ? (
-              <RefreshCw size={15} className="animate-spin" />
-            ) : savedSuccess ? (
-              <CheckCircle2 size={15} />
-            ) : (
-              <Save size={15} />
+            <div>
+              <div className="flex items-center space-x-2.5">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>Live Active Theme</span>
+                </span>
+                <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/80">
+                  {isCurrentDark ? 'Dark Mode' : 'Light Mode'}
+                </span>
+              </div>
+
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight mt-1 text-white">
+                {currentPreset.name}
+              </h1>
+              <p className="text-xs sm:text-sm text-neutral-400 mt-0.5">
+                {currentPreset.subtitle} — Real-time auto-synced across all visitors.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 shrink-0">
+            {onNavigateToStorefront && (
+              <button
+                type="button"
+                onClick={onNavigateToStorefront}
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-white text-neutral-950 text-xs sm:text-sm font-bold shadow-md hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+              >
+                <Eye size={15} />
+                <span>View Live Storefront</span>
+              </button>
             )}
-            <span>{savedSuccess ? 'Saved Live!' : isSaving ? 'Saving...' : 'Apply Theme'}</span>
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Preset Themes Grid */}
+      {/* ========================================================================= */}
+      {/* 2. PRESET THEMES GRID WITH INSTANT 1-CLICK APPLY                         */}
+      {/* ========================================================================= */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-neutral-200/80">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-neutral-900">
-              Preset Themes
+            <h2 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight flex items-center space-x-2">
+              <Sparkles size={18} className="text-indigo-600" />
+              <span>Curated Theme Collection</span>
             </h2>
-            <p className="text-xs text-neutral-500">
-              Select any pre-designed background style to apply instantly
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Click any theme card or &quot;Activate Theme&quot; to apply instantly to your website with 0ms delay.
             </p>
           </div>
-          <span className="text-[11px] font-medium text-neutral-400 bg-neutral-100 px-2.5 py-1 rounded-full">
-            {PRESET_THEMES.length} Available
-          </span>
+
+          {/* Filter Pills */}
+          <div className="flex items-center space-x-1.5 bg-neutral-100 p-1 rounded-xl shrink-0 overflow-x-auto">
+            {[
+              { id: 'all', label: 'All Themes', count: PRESET_THEMES.length },
+              { id: 'light', label: 'Light', count: PRESET_THEMES.filter((t) => t.category === 'light').length },
+              { id: 'dark', label: 'Dark', count: PRESET_THEMES.filter((t) => t.category === 'dark').length },
+              { id: 'custom', label: 'Custom' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedCategory(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === tab.id
+                    ? 'bg-white text-neutral-900 shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                {tab.label} {tab.count !== undefined && `(${tab.count})`}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-          {PRESET_THEMES.map((theme) => {
+        {/* Theme Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredThemes.map((theme) => {
             const isSelected = activeTheme === theme.id;
+            const isApplying = isApplyingThemeId === theme.id;
+
             return (
               <div
                 key={theme.id}
-                onClick={() => handleSelectPreset(theme.id)}
+                onClick={() => handleActivateTheme(theme.id)}
                 className={`group relative rounded-2xl p-3.5 sm:p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
                     ? 'border-indigo-600 bg-indigo-50/20 shadow-md ring-2 ring-indigo-500/20'
-                    : 'border-neutral-200/90 hover:border-neutral-300 bg-white hover:shadow-sm'
+                    : 'border-neutral-200/90 hover:border-neutral-300 bg-white hover:shadow-md hover:-translate-y-0.5'
                 }`}
               >
-                {/* Visual Preview Swatch */}
+                {/* Visual Wallpaper Preview Swatch */}
                 <div
-                  className="w-full h-28 sm:h-32 rounded-xl overflow-hidden relative flex flex-col justify-between p-2.5 shadow-inner border border-black/5"
+                  className="w-full h-32 sm:h-36 rounded-xl overflow-hidden relative flex flex-col justify-between p-3 shadow-inner border border-black/5"
                   style={{
                     background: theme.previewGradient,
                     backgroundImage: theme.desktopBg ? `url('${theme.desktopBg}')` : theme.previewGradient,
@@ -240,54 +346,90 @@ export default function AppearanceView({
                     backgroundPosition: 'center',
                   }}
                 >
-                  {/* Floating badge inside card */}
+                  {/* Floating Badges */}
                   <div className="flex items-center justify-between">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md shadow-xs ${
                         theme.mode === 'dark'
-                          ? 'bg-black/60 text-white'
-                          : 'bg-white/80 text-neutral-900'
+                          ? 'bg-black/70 text-white border border-white/10'
+                          : 'bg-white/85 text-neutral-900 border border-black/5'
                       }`}
                     >
-                      {theme.mode === 'dark' ? 'Dark' : 'Light'}
+                      {theme.mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
                     </span>
 
-                    {isSelected && (
-                      <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-sm">
-                        <Check size={14} />
+                    {isSelected ? (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center space-x-1 shadow-sm">
+                        <Check size={11} className="stroke-[3]" />
+                        <span>Active</span>
+                      </span>
+                    ) : (
+                      <span className="text-[9.5px] font-semibold text-white/90 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                        {theme.tag}
                       </span>
                     )}
                   </div>
 
-                  {/* Mini simulated storefront card floating over the background */}
+                  {/* Simulated Floating Glass Card in Preview */}
                   <div
-                    className={`rounded-lg p-1.5 flex items-center space-x-2 border shadow-xs ${
+                    className={`rounded-lg p-2 flex items-center space-x-2 border shadow-xs transition-transform group-hover:scale-[1.02] ${
                       theme.mode === 'dark'
-                        ? 'bg-neutral-900/60 backdrop-blur-md border-white/10 text-white'
-                        : 'bg-white/75 backdrop-blur-md border-white/80 text-neutral-900'
+                        ? 'bg-neutral-900/70 backdrop-blur-md border-white/10 text-white'
+                        : 'bg-white/80 backdrop-blur-md border-white/90 text-neutral-900'
                     }`}
                   >
-                    <div className="w-5 h-5 rounded-md bg-white/90 shrink-0 shadow-2xs" />
+                    <div className="w-6 h-6 rounded-md bg-white shrink-0 shadow-2xs border border-black/5 flex items-center justify-center">
+                      <Sparkles size={11} className="text-amber-500" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="h-1.5 w-12 bg-current opacity-60 rounded-full mb-1" />
-                      <div className="h-1 w-8 bg-current opacity-30 rounded-full" />
+                      <div className="h-2 w-14 bg-current opacity-70 rounded-full mb-1" />
+                      <div className="h-1.5 w-9 bg-current opacity-40 rounded-full" />
                     </div>
                   </div>
                 </div>
 
-                {/* Theme Title & Meta */}
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-neutral-900 tracking-tight">
-                      {theme.name}
-                    </h3>
-                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                      {theme.tag}
-                    </span>
+                {/* Theme Title & Action Bar */}
+                <div className="mt-3.5 flex flex-col justify-between flex-1">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-neutral-900 tracking-tight">
+                        {theme.name}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
+                      {theme.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-neutral-500 mt-0.5 line-clamp-2">
-                    {theme.description}
-                  </p>
+
+                  {/* 1-Click Activate Button */}
+                  <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-neutral-400">
+                      {theme.subtitle}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={isApplying}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleActivateTheme(theme.id);
+                      }}
+                      className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                          : 'bg-neutral-900 text-white hover:bg-indigo-600 active:scale-95 shadow-xs'
+                      }`}
+                    >
+                      {isApplying ? (
+                        <RefreshCw size={12} className="animate-spin" />
+                      ) : isSelected ? (
+                        <Check size={12} className="stroke-[3]" />
+                      ) : (
+                        <Zap size={12} />
+                      )}
+                      <span>{isApplying ? 'Applying...' : isSelected ? 'Active on Store' : 'Activate Theme'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -295,7 +437,9 @@ export default function AppearanceView({
         </div>
       </div>
 
-      {/* Custom Theme & Wallpaper Configuration Panel */}
+      {/* ========================================================================= */}
+      {/* 3. CUSTOM WALLPAPER UPLOAD & GLASS DISPERSION CONTROLS                     */}
+      {/* ========================================================================= */}
       <div
         className={`bg-white rounded-2xl p-5 sm:p-6 shadow-sm border transition-all ${
           isCustom
@@ -303,33 +447,45 @@ export default function AppearanceView({
             : 'border-neutral-200/80 opacity-95'
         }`}
       >
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100">
-          <div className="flex items-center space-x-2.5">
-            <span className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-              <Upload size={17} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-neutral-100">
+          <div className="flex items-center space-x-3">
+            <span className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <Upload size={19} />
             </span>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-neutral-900">
-                Custom Wallpaper & Theme Controls
+              <h2 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight">
+                Custom Wallpaper & Styling Controls
               </h2>
-              <p className="text-xs text-neutral-500">
-                Upload your own image file or link any online wallpaper URL
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Upload your own custom background photo or paste any image URL with tailored glass dispersion controls.
               </p>
             </div>
           </div>
 
-          {!isCustom && (
+          <div className="flex items-center space-x-2">
+            {!isCustom && (
+              <button
+                type="button"
+                onClick={() => handleActivateTheme('custom')}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                Switch to Custom Mode
+              </button>
+            )}
+
             <button
-              onClick={() => handleSelectPreset('custom')}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+              type="button"
+              onClick={handleSaveCustomConfig}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-xs cursor-pointer"
             >
-              Switch to Custom
+              <Save size={13} />
+              <span>Save Adjustments</span>
             </button>
-          )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Desktop Wallpaper Box */}
+          {/* Desktop Wallpaper Upload */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center space-x-1.5">
@@ -347,10 +503,9 @@ export default function AppearanceView({
               )}
             </div>
 
-            {/* Drag & Drop / Upload Tile */}
             <div
               onClick={() => desktopFileInputRef.current?.click()}
-              className="group relative border-2 border-dashed border-neutral-300 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-all bg-neutral-50 hover:bg-indigo-50/20"
+              className="group relative border-2 border-dashed border-neutral-300 hover:border-indigo-500 rounded-xl p-5 text-center cursor-pointer transition-all bg-neutral-50 hover:bg-indigo-50/20"
             >
               <input
                 ref={desktopFileInputRef}
@@ -362,27 +517,26 @@ export default function AppearanceView({
                   if (file) handleFileUpload(file, false);
                 }}
               />
-              <div className="flex flex-col items-center justify-center space-y-1.5">
-                <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-neutral-200 flex items-center justify-center text-neutral-500 group-hover:text-indigo-600 transition-colors">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="w-11 h-11 rounded-full bg-white shadow-xs border border-neutral-200 flex items-center justify-center text-neutral-500 group-hover:text-indigo-600 transition-colors">
                   {isUploadingDesktop ? (
-                    <RefreshCw size={18} className="animate-spin text-indigo-600" />
+                    <RefreshCw size={20} className="animate-spin text-indigo-600" />
                   ) : (
-                    <Upload size={18} />
+                    <Upload size={20} />
                   )}
                 </div>
-                <div className="text-xs font-semibold text-neutral-800">
-                  {isUploadingDesktop ? 'Uploading image...' : 'Click to upload desktop wallpaper'}
+                <div className="text-xs font-bold text-neutral-800">
+                  {isUploadingDesktop ? 'Uploading desktop image...' : 'Click to upload desktop wallpaper'}
                 </div>
                 <div className="text-[11px] text-neutral-400">
-                  PNG, JPG, WebP up to 15MB
+                  JPG, PNG, WebP up to 15MB
                 </div>
               </div>
             </div>
 
-            {/* Direct URL Input */}
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-neutral-500">
-                Or enter image URL:
+                Or direct image URL:
               </label>
               <input
                 type="url"
@@ -392,12 +546,12 @@ export default function AppearanceView({
                   setActiveTheme('custom');
                 }}
                 placeholder="https://example.com/wallpaper.jpg"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
               />
             </div>
           </div>
 
-          {/* Mobile Wallpaper Box (Optional) */}
+          {/* Mobile Wallpaper Upload */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center space-x-1.5">
@@ -415,10 +569,9 @@ export default function AppearanceView({
               )}
             </div>
 
-            {/* Drag & Drop / Upload Tile */}
             <div
               onClick={() => mobileFileInputRef.current?.click()}
-              className="group relative border-2 border-dashed border-neutral-300 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-all bg-neutral-50 hover:bg-indigo-50/20"
+              className="group relative border-2 border-dashed border-neutral-300 hover:border-indigo-500 rounded-xl p-5 text-center cursor-pointer transition-all bg-neutral-50 hover:bg-indigo-50/20"
             >
               <input
                 ref={mobileFileInputRef}
@@ -430,15 +583,15 @@ export default function AppearanceView({
                   if (file) handleFileUpload(file, true);
                 }}
               />
-              <div className="flex flex-col items-center justify-center space-y-1.5">
-                <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-neutral-200 flex items-center justify-center text-neutral-500 group-hover:text-indigo-600 transition-colors">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="w-11 h-11 rounded-full bg-white shadow-xs border border-neutral-200 flex items-center justify-center text-neutral-500 group-hover:text-indigo-600 transition-colors">
                   {isUploadingMobile ? (
-                    <RefreshCw size={18} className="animate-spin text-indigo-600" />
+                    <RefreshCw size={20} className="animate-spin text-indigo-600" />
                   ) : (
-                    <Smartphone size={18} />
+                    <Smartphone size={20} />
                   )}
                 </div>
-                <div className="text-xs font-semibold text-neutral-800">
+                <div className="text-xs font-bold text-neutral-800">
                   {isUploadingMobile ? 'Uploading mobile image...' : 'Click to upload portrait mobile wallpaper'}
                 </div>
                 <div className="text-[11px] text-neutral-400">
@@ -447,10 +600,9 @@ export default function AppearanceView({
               </div>
             </div>
 
-            {/* Direct URL Input */}
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-neutral-500">
-                Or enter mobile image URL:
+                Or direct mobile image URL:
               </label>
               <input
                 type="url"
@@ -460,14 +612,14 @@ export default function AppearanceView({
                   setActiveTheme('custom');
                 }}
                 placeholder="https://example.com/mobile-wallpaper.jpg"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
               />
             </div>
           </div>
         </div>
 
-        {/* Theme Mode & Glass Controls */}
-        <div className="mt-6 pt-5 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Theme Mode & Frosted Glass Sliders */}
+        <div className="mt-6 pt-5 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-3 gap-5">
           {/* Mode Switcher */}
           <div>
             <label className="text-xs font-bold text-neutral-800 block mb-2">
@@ -476,8 +628,11 @@ export default function AppearanceView({
             <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl">
               <button
                 type="button"
-                onClick={() => setThemeMode('light')}
-                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                onClick={() => {
+                  setThemeMode('light');
+                  if (isCustom) handleActivateTheme('custom', 'light');
+                }}
+                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   themeMode === 'light'
                     ? 'bg-white text-neutral-900 shadow-xs'
                     : 'text-neutral-500 hover:text-neutral-900'
@@ -489,8 +644,11 @@ export default function AppearanceView({
 
               <button
                 type="button"
-                onClick={() => setThemeMode('dark')}
-                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                onClick={() => {
+                  setThemeMode('dark');
+                  if (isCustom) handleActivateTheme('custom', 'dark');
+                }}
+                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   themeMode === 'dark'
                     ? 'bg-neutral-900 text-white shadow-xs'
                     : 'text-neutral-500 hover:text-neutral-900'
@@ -505,7 +663,7 @@ export default function AppearanceView({
             </span>
           </div>
 
-          {/* Glass Opacity */}
+          {/* Glass Transparency */}
           <div>
             <label className="text-xs font-bold text-neutral-800 block mb-2">
               Glass Transparency
@@ -520,7 +678,7 @@ export default function AppearanceView({
                   key={opt.id}
                   type="button"
                   onClick={() => setGlassOpacity(opt.id)}
-                  className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     glassOpacity === opt.id
                       ? 'bg-white text-neutral-900 shadow-xs'
                       : 'text-neutral-500 hover:text-neutral-900'
@@ -535,7 +693,7 @@ export default function AppearanceView({
             </span>
           </div>
 
-          {/* Glass Blur Level */}
+          {/* Frost Blur Level */}
           <div>
             <label className="text-xs font-bold text-neutral-800 block mb-2">
               Frost Blur Level
@@ -550,7 +708,7 @@ export default function AppearanceView({
                   key={opt.id}
                   type="button"
                   onClick={() => setGlassBlur(opt.id)}
-                  className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     glassBlur === opt.id
                       ? 'bg-white text-neutral-900 shadow-xs'
                       : 'text-neutral-500 hover:text-neutral-900'
@@ -561,19 +719,21 @@ export default function AppearanceView({
               ))}
             </div>
             <span className="text-[10px] text-neutral-400 mt-1 block">
-              Amount of optical frosted glass dispersion.
+              Optical glass dispersion blur strength.
             </span>
           </div>
         </div>
       </div>
 
-      {/* Live Preview Window */}
+      {/* ========================================================================= */}
+      {/* 4. LIVE INTERACTIVE STOREFRONT SIMULATOR                                  */}
+      {/* ========================================================================= */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-neutral-200/80">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-sm sm:text-base font-bold text-neutral-900">
-              Live Preview
+            <h2 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight">
+              Interactive Storefront Preview
             </h2>
           </div>
 
@@ -610,7 +770,7 @@ export default function AppearanceView({
         <div className="rounded-2xl border border-neutral-300/80 overflow-hidden shadow-inner bg-neutral-900 flex justify-center">
           <div
             className={`transition-all duration-300 relative overflow-hidden flex flex-col justify-start ${
-              previewDevice === 'mobile' ? 'w-[360px] min-h-[460px] p-3' : 'w-full min-h-[380px] p-4 sm:p-6'
+              previewDevice === 'mobile' ? 'w-[360px] min-h-[460px] p-3' : 'w-full min-h-[400px] p-4 sm:p-6'
             }`}
             style={{
               backgroundColor: isCurrentDark ? '#0f172a' : '#ECEEF2',
@@ -646,7 +806,11 @@ export default function AppearanceView({
               {/* Top Mini Header */}
               <div className="flex items-center justify-between pb-3 border-b border-current/10">
                 <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-500 ring-2 ring-white/30" />
+                  <img
+                    src="/logo.png"
+                    alt="Logo"
+                    className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10"
+                  />
                   <span className="text-xs font-black tracking-widest uppercase">
                     {settings?.brandWordmark || 'TECHNICALSKY'}
                   </span>
@@ -675,18 +839,18 @@ export default function AppearanceView({
                         : 'bg-white/85 border-white/90 text-neutral-900'
                     }`}
                   >
-                    <div className="w-full aspect-square rounded-lg bg-neutral-100 flex items-center justify-center mb-1.5">
-                      <Sparkles size={12} className="text-neutral-400" />
+                    <div className="w-full aspect-square rounded-lg bg-white flex items-center justify-center mb-1.5 shadow-2xs border border-neutral-100">
+                      <Sparkles size={13} className="text-amber-500" />
                     </div>
-                    <div className="h-2 w-12 bg-current opacity-70 rounded-full mx-auto mb-1" />
+                    <div className="h-2 w-14 bg-current opacity-70 rounded-full mx-auto mb-1" />
                     <div className="h-1.5 w-8 bg-current opacity-40 rounded-full mx-auto" />
                   </div>
                 ))}
               </div>
 
               {/* Bottom tag */}
-              <div className="pt-2 text-center text-[10px] opacity-50">
-                Active Theme: <span className="font-semibold">{currentPreset.name}</span> ({isCurrentDark ? 'Dark Mode' : 'Light Mode'})
+              <div className="pt-2 text-center text-[10px] opacity-60">
+                Active Theme: <span className="font-bold">{currentPreset.name}</span> ({isCurrentDark ? 'Dark Mode' : 'Light Mode'})
               </div>
             </div>
           </div>
@@ -695,4 +859,3 @@ export default function AppearanceView({
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { prisma } from '../db/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,13 +45,46 @@ const TMP_SETTINGS_FILE = '/tmp/curator_settings.json';
 
 export class SettingsService {
   private static cachedSettings: StoreSettings | null = null;
+  private static tableEnsured = false;
 
-  static getSettings(): StoreSettings {
+  private static async ensureTable(): Promise<void> {
+    if (this.tableEnsured) return;
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS store_settings (
+          id VARCHAR(50) PRIMARY KEY,
+          data JSONB NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      this.tableEnsured = true;
+    } catch {
+      // Non-fatal if table exists or permission handled
+    }
+  }
+
+  static async getSettings(): Promise<StoreSettings> {
     if (this.cachedSettings) {
       return this.cachedSettings;
     }
 
-    // 1. Try reading from /tmp (most recent in serverless environment)
+    // 1. Try reading from Supabase PostgreSQL database (shared across all Vercel lambdas)
+    try {
+      await this.ensureTable();
+      const rows = await prisma.$queryRawUnsafe<Array<{ data: any }>>(
+        'SELECT data FROM store_settings WHERE id = $1 LIMIT 1',
+        'current'
+      );
+      if (rows && rows.length > 0 && rows[0].data) {
+        const resolved: StoreSettings = { ...DEFAULT_SETTINGS, ...rows[0].data };
+        this.cachedSettings = resolved;
+        return resolved;
+      }
+    } catch (dbErr) {
+      console.warn('Database read for settings failed, checking fallbacks:', dbErr);
+    }
+
+    // 2. Try reading from /tmp (local container cache)
     try {
       if (fs.existsSync(TMP_SETTINGS_FILE)) {
         const raw = fs.readFileSync(TMP_SETTINGS_FILE, 'utf-8');
@@ -63,7 +97,7 @@ export class SettingsService {
       // Fallback to project root file
     }
 
-    // 2. Try reading from project data file
+    // 3. Try reading from project data file
     try {
       if (fs.existsSync(SETTINGS_FILE)) {
         const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
@@ -81,8 +115,23 @@ export class SettingsService {
     return fallback;
   }
 
-  static updateSettings(partial: Partial<StoreSettings>): StoreSettings {
-    const current = this.getSettings();
+  static getSettingsSync(): StoreSettings {
+    if (this.cachedSettings) return this.cachedSettings;
+    try {
+      if (fs.existsSync(TMP_SETTINGS_FILE)) {
+        const raw = fs.readFileSync(TMP_SETTINGS_FILE, 'utf-8');
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      }
+      if (fs.existsSync(SETTINGS_FILE)) {
+        const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      }
+    } catch {}
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  static async updateSettings(partial: Partial<StoreSettings>): Promise<StoreSettings> {
+    const current = await this.getSettings();
     const updated: StoreSettings = {
       ...current,
       ...partial,
@@ -90,26 +139,41 @@ export class SettingsService {
       defaultFlipkartTag: partial.defaultFlipkartTag !== undefined ? partial.defaultFlipkartTag.trim() : current.defaultFlipkartTag,
     };
 
-    // 1. Try writing to project data file
+    // 1. Immediately update memory cache
+    this.cachedSettings = updated;
+
+    // 2. Persist to Supabase PostgreSQL database
     try {
-      const dir = path.dirname(SETTINGS_FILE);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
-    } catch (err) {
-      // In read-only serverless lambdas, writing to root dir may be prevented
-      console.warn('Note: settings file in bundle is read-only, relying on /tmp & in-memory cache');
+      await this.ensureTable();
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO store_settings (id, data, updated_at) 
+         VALUES ($1, $2::jsonb, NOW()) 
+         ON CONFLICT (id) DO UPDATE SET data = $2::jsonb, updated_at = NOW()`,
+        'current',
+        JSON.stringify(updated)
+      );
+    } catch (dbErr) {
+      console.error('Failed saving settings to Supabase DB:', dbErr);
     }
 
-    // 2. Write to /tmp for guaranteed write access in serverless environments
+    // 3. Write to /tmp for guaranteed write access in serverless environments
     try {
       fs.writeFileSync(TMP_SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
     } catch {
       // Non-critical
     }
 
-    this.cachedSettings = updated;
+    // 4. Try writing to project data file
+    try {
+      const dir = path.dirname(SETTINGS_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    } catch {
+      // In read-only serverless lambdas, writing to root dir may be prevented
+    }
+
     return updated;
   }
 }

@@ -208,7 +208,7 @@ export class AdminController {
 
   static async getSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const settings = SettingsService.getSettings();
+      const settings = await SettingsService.getSettings();
       res.status(200).json({ success: true, settings });
     } catch (error) {
       next(error);
@@ -217,7 +217,7 @@ export class AdminController {
 
   static async updateSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const settings = SettingsService.updateSettings(req.body);
+      const settings = await SettingsService.updateSettings(req.body);
       res.status(200).json({ success: true, settings });
     } catch (error) {
       next(error);

@@ -74,7 +74,7 @@ export class PublicController {
 
   static async getSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const settings = SettingsService.getSettings();
+      const settings = await SettingsService.getSettings();
       res.status(200).json({
         success: true,
         settings,

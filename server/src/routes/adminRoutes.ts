@@ -81,6 +81,7 @@ router.delete('/categories/:id', AdminController.deleteCategory);
 // Storefront & Affiliate Settings
 router.get('/settings', AdminController.getSettings);
 router.patch('/settings', AdminController.updateSettings);
+router.put('/settings', AdminController.updateSettings);
 
 export const adminRoutes = router;
 

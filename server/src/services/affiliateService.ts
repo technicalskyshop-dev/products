@@ -49,7 +49,7 @@ export class AffiliateService {
     }
 
     // Automatically inject active client affiliate tags from settings
-    const currentSettings = SettingsService.getSettings();
+    const currentSettings = await SettingsService.getSettings();
     if (platform === 'amazon' && currentSettings.defaultAmazonTag) {
       parsedUrl.searchParams.set('tag', currentSettings.defaultAmazonTag.trim());
     } else if (platform === 'flipkart' && currentSettings.defaultFlipkartTag) {

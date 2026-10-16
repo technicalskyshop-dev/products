@@ -49,6 +49,14 @@ export default function App() {
       ? 'glass-blur-high'
       : '';
 
+  // Keep document background and dark class synced with theme
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', Boolean(isDark));
+      document.body.style.backgroundColor = isDark ? '#0f172a' : '#ECEEF2';
+    }
+  }, [isDark]);
+
   // Keep route synced with browser history & address bar
   useEffect(() => {
     const handlePopState = () => {
