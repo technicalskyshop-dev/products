@@ -40,6 +40,8 @@ const DEFAULT_SETTINGS: StoreSettings = {
   glassOpacity: 'medium',
 };
 
+const TMP_SETTINGS_FILE = '/tmp/curator_settings.json';
+
 export class SettingsService {
   private static cachedSettings: StoreSettings | null = null;
 
@@ -48,6 +50,20 @@ export class SettingsService {
       return this.cachedSettings;
     }
 
+    // 1. Try reading from /tmp (most recent in serverless environment)
+    try {
+      if (fs.existsSync(TMP_SETTINGS_FILE)) {
+        const raw = fs.readFileSync(TMP_SETTINGS_FILE, 'utf-8');
+        const parsed = JSON.parse(raw);
+        const resolved: StoreSettings = { ...DEFAULT_SETTINGS, ...parsed };
+        this.cachedSettings = resolved;
+        return resolved;
+      }
+    } catch {
+      // Fallback to project root file
+    }
+
+    // 2. Try reading from project data file
     try {
       if (fs.existsSync(SETTINGS_FILE)) {
         const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
@@ -74,18 +90,26 @@ export class SettingsService {
       defaultFlipkartTag: partial.defaultFlipkartTag !== undefined ? partial.defaultFlipkartTag.trim() : current.defaultFlipkartTag,
     };
 
+    // 1. Try writing to project data file
     try {
       const dir = path.dirname(SETTINGS_FILE);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
-      this.cachedSettings = updated;
     } catch (err) {
-      console.error('Failed to write settings to disk:', err);
-      this.cachedSettings = updated;
+      // In read-only serverless lambdas, writing to root dir may be prevented
+      console.warn('Note: settings file in bundle is read-only, relying on /tmp & in-memory cache');
     }
 
+    // 2. Write to /tmp for guaranteed write access in serverless environments
+    try {
+      fs.writeFileSync(TMP_SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    } catch {
+      // Non-critical
+    }
+
+    this.cachedSettings = updated;
     return updated;
   }
 }

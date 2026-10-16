@@ -31,11 +31,14 @@ function getCachedJson(key, fallback) {
 }
 
 function areProductsEqual(prevList, newList) {
+  if (prevList === newList) return true;
   if (!prevList || !newList) return false;
   if (prevList.length !== newList.length) return false;
   for (let i = 0; i < prevList.length; i++) {
     const a = prevList[i];
     const b = newList[i];
+    const aCat = typeof a.category === 'object' && a.category !== null ? a.category.id || a.category.slug : a.category || a.categoryId;
+    const bCat = typeof b.category === 'object' && b.category !== null ? b.category.id || b.category.slug : b.category || b.categoryId;
     if (
       a.id !== b.id ||
       a.status !== b.status ||
@@ -43,15 +46,19 @@ function areProductsEqual(prevList, newList) {
       a.displayPrice !== b.displayPrice ||
       Number(a.priceAmount || 0) !== Number(b.priceAmount || 0) ||
       Number(a.priceValue || 0) !== Number(b.priceValue || 0) ||
+      a.originalPrice !== b.originalPrice ||
+      Number(a.originalPriceAmount || 0) !== Number(b.originalPriceAmount || 0) ||
       a.name !== b.name ||
       a.imageUrl !== b.imageUrl ||
       a.categoryId !== b.categoryId ||
-      a.category !== b.category ||
+      aCat !== bCat ||
       a.categoryLabel !== b.categoryLabel ||
       a.amazonUrl !== b.amazonUrl ||
       a.flipkartUrl !== b.flipkartUrl ||
       a.shortDescription !== b.shortDescription ||
       a.description !== b.description ||
+      a.aspectRatio !== b.aspectRatio ||
+      a.heightClass !== b.heightClass ||
       String(a.updatedAt || '') !== String(b.updatedAt || '')
     ) {
       return false;
@@ -61,12 +68,19 @@ function areProductsEqual(prevList, newList) {
 }
 
 function areCategoriesEqual(prevList, newList) {
+  if (prevList === newList) return true;
   if (!prevList || !newList) return false;
   if (prevList.length !== newList.length) return false;
   for (let i = 0; i < prevList.length; i++) {
     const a = prevList[i];
     const b = newList[i];
-    if (a.id !== b.id || a.name !== b.name || a.enabled !== b.enabled || a.order !== b.order) {
+    if (
+      a.id !== b.id ||
+      a.name !== b.name ||
+      a.slug !== b.slug ||
+      Boolean(a.enabled) !== Boolean(b.enabled) ||
+      Number(a.order || 0) !== Number(b.order || 0)
+    ) {
       return false;
     }
   }
@@ -74,12 +88,13 @@ function areCategoriesEqual(prevList, newList) {
 }
 
 function areSettingsEqual(prevSettings, newSettings) {
+  if (prevSettings === newSettings) return true;
   if (!prevSettings || !newSettings) return false;
-  const keys = ['storeName', 'brandWordmark', 'storeTagline', 'currencySymbol', 'defaultAmazonTag', 'defaultFlipkartTag', 'inquiryEmail', 'announcementNotice'];
-  for (const k of keys) {
-    if (prevSettings[k] !== newSettings[k]) return false;
+  try {
+    return JSON.stringify(prevSettings) === JSON.stringify(newSettings);
+  } catch {
+    return false;
   }
-  return true;
 }
 
 function checkIsAdminRoute() {
@@ -109,17 +124,21 @@ export function StoreProvider({ children }) {
   const inFlightPublicFetchRef = useRef(null);
   const lastPublicFetchTimeRef = useRef(0);
   const mountTimeRef = useRef(Date.now());
+  const broadcastChannelRef = useRef(null);
 
-  // Broadcast catalog mutations across all open browser tabs / windows
+  // Broadcast catalog mutations across all open browser tabs / windows and local components
   const notifyCatalogChanged = useCallback(() => {
     try {
       if (typeof window !== 'undefined') {
-        if ('BroadcastChannel' in window) {
-          const channel = new BroadcastChannel('curated_discovery_sync');
-          channel.postMessage({ type: 'CATALOG_MUTATED', timestamp: Date.now() });
-          channel.close();
+        const now = Date.now();
+        // 1. Send message over long-lived BroadcastChannel (instant 0ms cross-tab sync)
+        if (broadcastChannelRef.current) {
+          broadcastChannelRef.current.postMessage({ type: 'CATALOG_MUTATED', timestamp: now });
         }
-        localStorage.setItem('curated_discovery_last_sync', String(Date.now()));
+        // 2. Storage event fallback for cross-tab contexts
+        localStorage.setItem('curated_discovery_last_sync', String(now));
+        // 3. Same-tab local CustomEvent so components in THIS tab update with 0ms latency
+        window.dispatchEvent(new CustomEvent('curated_discovery_local_mutation', { detail: { timestamp: now } }));
       }
     } catch {
       // Non-critical fallback
@@ -127,9 +146,8 @@ export function StoreProvider({ children }) {
   }, []);
 
   // Fetch Public Catalog (Categories & Published Products) with In-Flight Deduplication & Equality Checks
-  // Fetch Public Catalog (Categories & Published Products) with In-Flight Deduplication & Equality Checks
-  const fetchPublicData = useCallback(async (silent = false) => {
-    if (inFlightPublicFetchRef.current) {
+  const fetchPublicData = useCallback(async (silent = false, force = false) => {
+    if (!force && inFlightPublicFetchRef.current) {
       return inFlightPublicFetchRef.current;
     }
 
@@ -187,7 +205,7 @@ export function StoreProvider({ children }) {
   }, []);
 
   // Fetch Admin Catalog (includes Drafts & full metrics) with Zero-Flicker Protection
-  const fetchAdminData = useCallback(async (silent = true) => {
+  const fetchAdminData = useCallback(async (silent = true, force = false) => {
     try {
       if (!silent) setIsLoading(true);
       setError(null);
@@ -268,15 +286,15 @@ export function StoreProvider({ children }) {
   }, [fetchAdminData, fetchPublicData]);
 
   // Unified silent sync trigger across tab switch, cross-device polling, and BroadcastChannel
-  const syncLatestCatalog = useCallback(async () => {
+  const syncLatestCatalog = useCallback(async (force = false) => {
     if (adminUser) {
-      await fetchAdminData(true);
+      await fetchAdminData(true, force);
     } else {
-      await fetchPublicData(true);
+      await fetchPublicData(true, force);
     }
   }, [adminUser, fetchAdminData, fetchPublicData]);
 
-  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Instant Tab/Window Focus, & 3.5s Background Heartbeat)
+  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Instant Tab/Window Focus, & 2.5s Background Heartbeat)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -285,9 +303,10 @@ export function StoreProvider({ children }) {
     if ('BroadcastChannel' in window) {
       try {
         channel = new BroadcastChannel('curated_discovery_sync');
+        broadcastChannelRef.current = channel;
         channel.onmessage = (event) => {
           if (event.data?.type === 'CATALOG_MUTATED') {
-            syncLatestCatalog();
+            syncLatestCatalog(true);
           }
         };
       } catch {
@@ -298,36 +317,46 @@ export function StoreProvider({ children }) {
     // 2. Storage event fallback for cross-tab sync
     const handleStorage = (e) => {
       if (e.key === 'curated_discovery_last_sync') {
-        syncLatestCatalog();
+        syncLatestCatalog(true);
       }
     };
     window.addEventListener('storage', handleStorage);
 
-    // 3. Tab Visibility & Window Focus Auto-Revalidation (when switching browser tabs/windows)
+    // 3. Same-tab local CustomEvent listener (Instant local sync)
+    const handleLocalMutation = () => {
+      syncLatestCatalog(true);
+    };
+    window.addEventListener('curated_discovery_local_mutation', handleLocalMutation);
+
+    // 4. Tab Visibility & Window Focus Auto-Revalidation (when switching browser tabs/windows)
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        // Allow immediate revalidation on tab focus, throttled to 2 seconds to avoid rapid duplicate fetches
-        if (now - lastPublicFetchTimeRef.current < 2000) return;
-        syncLatestCatalog();
+        // Allow immediate revalidation on tab focus, debounced to 500ms
+        if (now - lastPublicFetchTimeRef.current < 500) return;
+        syncLatestCatalog(true);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
 
-    // 4. Ultra-responsive Background Polling Heartbeat (every 3.5 seconds)
+    // 5. Ultra-responsive Background Polling Heartbeat (every 2.5 seconds)
     // Ensures other devices (mobile phones, secondary screens) update automatically in near real-time
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        if (now - lastPublicFetchTimeRef.current < 3000) return;
-        syncLatestCatalog();
+        if (now - lastPublicFetchTimeRef.current < 2000) return;
+        syncLatestCatalog(false);
       }
-    }, 3500);
+    }, 2500);
 
     return () => {
-      if (channel) channel.close();
+      if (channel) {
+        channel.close();
+        broadcastChannelRef.current = null;
+      }
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('curated_discovery_local_mutation', handleLocalMutation);
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
       window.removeEventListener('focus', handleVisibilityOrFocus);
       clearInterval(pollInterval);
@@ -641,8 +670,11 @@ export function StoreProvider({ children }) {
       // 2. Persist to Express backend and data/settings.json
       const res = await api.updateSettings(newSettings);
       if (res?.settings) {
-        setSettings(res.settings);
-        try { localStorage.setItem('curator_cached_settings', JSON.stringify(res.settings)); } catch {}
+        setSettings((prev) => {
+          const next = { ...prev, ...res.settings };
+          try { localStorage.setItem('curator_cached_settings', JSON.stringify(next)); } catch {}
+          return next;
+        });
       }
       notifyCatalogChanged();
       return { success: true, settings: res?.settings };
@@ -676,9 +708,9 @@ export function StoreProvider({ children }) {
 
   const refreshCatalog = useCallback(async () => {
     if (adminUser) {
-      return await fetchAdminData(false);
+      return await fetchAdminData(false, true);
     }
-    return await fetchPublicData(false);
+    return await fetchPublicData(false, true);
   }, [adminUser, fetchAdminData, fetchPublicData]);
 
   const value = {
