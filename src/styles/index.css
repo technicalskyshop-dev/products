@@ -6,7 +6,7 @@
   html {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #171717;
-    background-color: #E2E4E8;
+    background-color: #ECEEF2;
   }
 }
 
@@ -29,17 +29,23 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Subtle tech dot-matrix background utility */
+/* Subtle tech blueprint grid & ribbon canvas background */
 .canvas-bg {
-  background-color: #E2E4E8;
-  background-image: url('/tech-bg.jpg');
+  background-color: #EDEDEE;
+  background-image: url('/offwhite-bg.jpg');
   background-size: cover;
-  background-position: center;
+  background-position: top center;
   background-repeat: no-repeat;
 }
 
+@media (max-width: 768px) {
+  .canvas-bg {
+    background-image: url('/offwhite-bg-m.jpg');
+  }
+}
+
 .pale-tile {
-  background-color: #F3F4F6;
+  background-color: #F4F5F7;
 }
 
 /* Custom subtle scrollbar */
