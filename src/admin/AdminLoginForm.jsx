@@ -40,9 +40,11 @@ export default function AdminLoginForm({ onLogin, onNavigateToStorefront }) {
         {/* Top Header */}
         <div className="relative flex items-center justify-between pb-6 border-b border-white/[0.08]">
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-white via-neutral-100 to-neutral-300 text-neutral-950 font-black text-sm flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] ring-1 ring-white/20 shrink-0">
-              TS
-            </div>
+            <img
+              src="/logo.png"
+              alt="TechnicalSky"
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shadow-[0_4px_16px_rgba(255,255,255,0.25)] shrink-0"
+            />
             <div className="min-w-0">
               <div className="flex items-center space-x-1.5">
                 <h2 className="text-base font-bold text-white tracking-tight leading-tight truncate">

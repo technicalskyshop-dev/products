@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useStore } from '../context/StoreContext';
 
 export default function Header({
   onOpenAbout,
@@ -12,6 +13,8 @@ export default function Header({
   onNavigateToAdmin,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { settings } = useStore();
+  const wordmark = settings?.brandWordmark || 'TECHNICALSKY';
 
   const handleNavClick = (nav) => {
     setActiveNav(nav);
@@ -22,13 +25,20 @@ export default function Header({
 
   return (
     <header className="w-full pt-8 pb-6 px-6 sm:px-10 lg:px-14 flex items-center justify-between text-neutral-900 border-b border-neutral-900/[0.06]">
-      {/* Brand Wordmark (Left) */}
+      {/* Brand Logo & Wordmark (Left) */}
       <div className="flex-1 flex items-center">
         <button
           onClick={() => handleNavClick('shop')}
-          className="text-base sm:text-lg font-extrabold tracking-[0.18em] uppercase text-neutral-900 hover:opacity-80 transition-opacity flex items-center space-x-2"
+          className="group flex items-center space-x-2.5 sm:space-x-3 text-neutral-900 hover:opacity-90 transition-all cursor-pointer select-none"
         >
-          <span>TECHNICALSKY</span>
+          <img
+            src="/logo.png"
+            alt="TechnicalSky"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm ring-1 ring-black/10 group-hover:scale-105 transition-transform shrink-0"
+          />
+          <span className="text-base sm:text-lg font-extrabold tracking-[0.18em] uppercase text-neutral-900 leading-none">
+            {wordmark}
+          </span>
         </button>
       </div>
 

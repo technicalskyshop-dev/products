@@ -107,9 +107,11 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             {!isSidebarCollapsed ? (
               <>
                 <div className="flex items-center space-x-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-white text-neutral-950 font-black text-xs flex items-center justify-center shadow-sm shrink-0">
-                    TS
-                  </div>
+                  <img
+                    src="/logo.png"
+                    alt="TechnicalSky"
+                    className="w-8 h-8 rounded-full object-cover shadow-sm ring-1 ring-white/20 shrink-0"
+                  />
                   <div className="min-w-0">
                     <h1 className="text-sm font-bold text-white tracking-tight leading-tight truncate">
                       {store.settings?.storeName || 'TechnicalSky'}
@@ -133,13 +135,13 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             ) : (
               /* Collapsed Slim Header */
               <div className="w-full flex flex-col items-center space-y-2">
-                <div
-                  className="w-10 h-10 rounded-xl bg-white text-neutral-950 font-black text-xs flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                <img
+                  src="/logo.png"
+                  alt="TechnicalSky"
+                  className="w-9 h-9 rounded-full object-cover shadow-sm ring-1 ring-white/20 cursor-pointer hover:scale-105 transition-transform"
                   onClick={toggleSidebar}
                   title="TechnicalSky (Click to expand sidebar)"
-                >
-                  TS
-                </div>
+                />
                 <button
                   onClick={toggleSidebar}
                   className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
@@ -283,9 +285,11 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div className="flex items-center space-x-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-white text-neutral-950 font-black text-xs flex items-center justify-center shadow-sm">
-                    TS
-                  </div>
+                  <img
+                    src="/logo.png"
+                    alt="TechnicalSky"
+                    className="w-9 h-9 rounded-full object-cover shadow-sm ring-1 ring-white/20 shrink-0"
+                  />
                   <div>
                     <h2 className="text-sm font-bold text-white tracking-tight leading-tight">
                       {store.settings?.storeName || 'TechnicalSky'}
