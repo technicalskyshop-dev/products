@@ -62,12 +62,11 @@ export default function App() {
 
   // Route: Public Storefront (Full-width 4-column modern card grid)
   return (
-    <div
-      className="min-h-screen bg-[#ECEEF2] bg-cover bg-center bg-fixed p-2.5 sm:p-4 md:p-6 lg:p-7 flex flex-col justify-start"
-      style={{ backgroundImage: "url('/offwhite-bg.jpg')" }}
-    >
-      {/* Outer Page Frame with Rounded Outer Corners, Off-White Tech Blueprint Canvas */}
-      <div className="w-full max-w-[1680px] mx-auto min-h-screen md:min-h-0 md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)] rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col relative shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-white/90 canvas-bg">
+    <div className="min-h-screen page-bg p-2.5 sm:p-4 md:p-6 lg:p-7 flex flex-col justify-start">
+      {/* Front Frosted Glass Panel (Liquid Glassmorphism) */}
+      <div className="w-full max-w-[1680px] mx-auto min-h-screen md:min-h-0 md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)] rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col relative glass-canvas">
+        {/* Subtle Specular Top Glass Highlight */}
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/60 via-white/20 to-transparent pointer-events-none rounded-t-[24px] sm:rounded-t-[32px] md:rounded-t-[40px]" />
         
         {/* Top Navigation Header */}
         <Header

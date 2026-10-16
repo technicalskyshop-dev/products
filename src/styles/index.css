@@ -29,19 +29,34 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Subtle tech blueprint grid & ribbon canvas background */
-.canvas-bg {
-  background-color: #EDEDEE;
+/* Page Background with Sillycorns-style Blueprint Grid & Ribbons */
+.page-bg {
+  background-color: #ECEEF2;
   background-image: url('/offwhite-bg.jpg');
   background-size: cover;
   background-position: top center;
+  background-attachment: fixed;
   background-repeat: no-repeat;
 }
 
 @media (max-width: 768px) {
-  .canvas-bg {
+  .page-bg {
     background-image: url('/offwhite-bg-m.jpg');
+    background-attachment: scroll;
   }
+}
+
+/* Front Floating Frosted Glass Canvas */
+.canvas-bg,
+.glass-canvas {
+  background-color: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.02),
+    inset 0 1px 2px rgba(255, 255, 255, 0.95);
 }
 
 .pale-tile {
