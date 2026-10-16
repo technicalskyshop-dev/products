@@ -109,3 +109,4 @@ export function resolveTheme(settings) {
     glassOpacity: settings?.glassOpacity || 'medium',
   };
 }
+
