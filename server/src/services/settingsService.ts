@@ -15,6 +15,12 @@ export interface StoreSettings {
   defaultFlipkartTag: string;
   inquiryEmail: string;
   announcementNotice: string;
+  activeTheme?: string;
+  customBgUrl?: string;
+  customBgMobileUrl?: string;
+  themeMode?: string;
+  glassBlur?: string;
+  glassOpacity?: string;
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -26,6 +32,12 @@ const DEFAULT_SETTINGS: StoreSettings = {
   defaultFlipkartTag: 'technicalsky',
   inquiryEmail: 'contact@technicalsky.com',
   announcementNotice: 'TechnicalSky verified affiliate partner of Amazon & Flipkart',
+  activeTheme: 'offwhite-grid',
+  customBgUrl: '',
+  customBgMobileUrl: '',
+  themeMode: 'light',
+  glassBlur: 'medium',
+  glassOpacity: 'medium',
 };
 
 export class SettingsService {

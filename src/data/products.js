@@ -20,6 +20,12 @@ export const DEFAULT_SETTINGS = {
   defaultFlipkartTag: 'technicalsky',
   inquiryEmail: 'contact@technicalsky.com',
   announcementNotice: 'TechnicalSky verified affiliate partner of Amazon & Flipkart',
+  activeTheme: 'offwhite-grid',
+  customBgUrl: '',
+  customBgMobileUrl: '',
+  themeMode: 'light',
+  glassBlur: 'medium',
+  glassOpacity: 'medium',
 };
 
 export const INITIAL_PRODUCTS = [

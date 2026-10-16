@@ -15,11 +15,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  Palette,
 } from 'lucide-react';
 import DashboardOverview from './DashboardOverview';
 import ProductManagement from './ProductManagement';
 import CategoryManagement from './CategoryManagement';
 import SettingsView from './SettingsView';
+import AppearanceView from './AppearanceView';
 import ToastNotification from './ToastNotification';
 import AdminLoginForm from './AdminLoginForm';
 import { useStore } from '../context/StoreContext';
@@ -77,6 +79,7 @@ export default function AdminLayout({ onNavigateToStorefront }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'products', label: 'Products', icon: Package, count: store.products.length },
+    { id: 'appearance', label: 'Theme & Style', icon: Palette },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -479,6 +482,15 @@ export default function AdminLayout({ onNavigateToStorefront }) {
               />
             )}
 
+            {activeTab === 'appearance' && (
+              <AppearanceView
+                settings={store.settings}
+                onUpdateSettings={store.updateSettings}
+                showToast={showToast}
+                onNavigateToStorefront={onNavigateToStorefront}
+              />
+            )}
+
             {activeTab === 'settings' && (
               <SettingsView
                 settings={store.settings}
@@ -532,6 +544,16 @@ export default function AdminLayout({ onNavigateToStorefront }) {
           aria-label="Add New Product"
         >
           <Plus size={20} className="stroke-[2.5]" />
+        </button>
+
+        <button
+          onClick={() => handleTabChange('appearance')}
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'appearance' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+          }`}
+        >
+          <Palette size={18} />
+          <span className="text-[10px] font-medium mt-0.5">Theme</span>
         </button>
 
         <button
