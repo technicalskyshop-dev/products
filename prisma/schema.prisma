@@ -78,3 +78,20 @@ model AffiliateClick {
   @@map("affiliate_clicks")
 }
 
+model ReviewKit {
+  id           String    @id
+  title        String
+  slug         String    @unique
+  subtitle     String?
+  description  String?
+  videoUrl     String?   @map("video_url")
+  badgeText    String?   @default("Reel / Review") @map("badge_text")
+  productIds   Json      @default("[]") @map("product_ids")
+  isFeatured   Boolean?  @default(true) @map("is_featured")
+  displayOrder Int?      @default(0) @map("display_order")
+  createdAt    DateTime? @default(now()) @map("created_at")
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at")
+
+  @@map("review_kits")
+}
+

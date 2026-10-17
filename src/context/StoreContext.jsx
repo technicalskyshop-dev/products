@@ -144,7 +144,7 @@ export function StoreProvider({ children }) {
   const [products, setProducts] = useState(() => getCachedJson('curator_cached_products', INITIAL_PRODUCTS));
   const [categories, setCategories] = useState(() => getCachedJson('curator_cached_categories', DEFAULT_CATEGORIES));
   const [settings, setSettings] = useState(() => getCachedJson('curator_cached_settings', DEFAULT_SETTINGS));
-  const [reviewKits, setReviewKits] = useState(() => getCachedJson('curator_cached_review_kits', DEFAULT_REVIEW_KITS));
+  const [reviewKits, setReviewKits] = useState(() => getCachedJson('curator_cached_review_kits', []));
   const [activeKitModal, setActiveKitModal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -158,6 +158,7 @@ export function StoreProvider({ children }) {
 
   // Synchronization & Throttle Refs
   const inFlightPublicFetchRef = useRef(null);
+  const inFlightAdminFetchRef = useRef(null);
   const lastPublicFetchTimeRef = useRef(0);
   const mountTimeRef = useRef(Date.now());
   const broadcastChannelRef = useRef(null);
@@ -252,6 +253,9 @@ export function StoreProvider({ children }) {
 
   // Fetch Admin Catalog (includes Drafts & full metrics) with Zero-Flicker Protection
   const fetchAdminData = useCallback(async (silent = true, force = false) => {
+    if (inFlightAdminFetchRef.current) return inFlightAdminFetchRef.current;
+
+    const fetchPromise = (async () => {
     try {
       if (!silent) setIsLoading(true);
       setError(null);
@@ -308,6 +312,13 @@ export function StoreProvider({ children }) {
     } finally {
       if (!silent) setIsLoading(false);
     }
+    })();
+    inFlightAdminFetchRef.current = fetchPromise;
+    try {
+      return await fetchPromise;
+    } finally {
+      if (inFlightAdminFetchRef.current === fetchPromise) inFlightAdminFetchRef.current = null;
+    }
   }, []);
 
   // Check Current Session on App Mount (only if visiting /admin)
@@ -344,6 +355,8 @@ export function StoreProvider({ children }) {
 
   // Unified silent sync trigger across tab switch, cross-device polling, and BroadcastChannel
   const syncLatestCatalog = useCallback(async (force = false) => {
+    // Prevent overlapping concurrent fetch collisions
+    if (inFlightAdminFetchRef.current || inFlightPublicFetchRef.current) return;
     if (adminUser) {
       await fetchAdminData(true, force);
     } else {
@@ -351,7 +364,7 @@ export function StoreProvider({ children }) {
     }
   }, [adminUser, fetchAdminData, fetchPublicData]);
 
-  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Instant Tab/Window Focus, & 2.5s Background Heartbeat)
+  // Real-Time Auto-Refresh Sync (Multi-tab Broadcast, Instant Tab/Window Focus, & Heartbeat)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -389,23 +402,23 @@ export function StoreProvider({ children }) {
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        // Allow immediate revalidation on tab focus, debounced to 500ms
-        if (now - lastPublicFetchTimeRef.current < 500) return;
+        // Allow immediate revalidation on tab focus, debounced to 1000ms
+        if (now - lastPublicFetchTimeRef.current < 1000) return;
         syncLatestCatalog(true);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
 
-    // 5. Ultra-responsive Background Polling Heartbeat (every 2.5 seconds)
-    // Ensures other devices (mobile phones, secondary screens) update automatically in near real-time
+    // 5. Stable Background Polling Heartbeat (every 10 seconds)
+    // Ensures other devices (mobile phones, secondary screens) update automatically without overloading DB connections
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        if (now - lastPublicFetchTimeRef.current < 2000) return;
+        if (now - lastPublicFetchTimeRef.current < 5000) return;
         syncLatestCatalog(false);
       }
-    }, 2500);
+    }, 10000);
 
     return () => {
       if (channel) {
