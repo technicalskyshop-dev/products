@@ -9,8 +9,36 @@ import {
 } from '../validation/productSchemas.js';
 
 export class ProductService {
+  private static seedingPromise: Promise<void> | null = null;
+
+  static async ensureSeeded() {
+    try {
+      const count = await prisma.product.count();
+      if (count === 0) {
+        if (!this.seedingPromise) {
+          console.log('⚡ Product count in database is 0. Running database auto-seed...');
+          const { runSeed } = await import('../db/seed.js');
+          this.seedingPromise = runSeed()
+            .then(() => {
+              console.log('✅ Auto-seed completed successfully.');
+            })
+            .catch((err) => {
+              console.error('Auto-seed failed:', err);
+            })
+            .finally(() => {
+              this.seedingPromise = null;
+            });
+        }
+        await this.seedingPromise;
+      }
+    } catch (e) {
+      console.warn('Auto-seed check non-fatal error:', e);
+    }
+  }
+
   // Public catalog: ONLY published products in enabled categories
   static async getPublicProducts(query: ProductQueryInput) {
+    await this.ensureSeeded();
     const page = Math.max(1, parseInt(String(query.page || 1), 10) || 1);
     const limit = Math.max(1, Math.min(100, parseInt(String(query.limit || 24), 10) || 24));
     const skip = (page - 1) * limit;
@@ -96,6 +124,7 @@ export class ProductService {
 
   // Admin: Get all products with filters
   static async getAdminProducts(query: ProductQueryInput) {
+    await this.ensureSeeded();
     const page = Math.max(1, parseInt(String(query.page || 1), 10) || 1);
     const limit = Math.max(1, Math.min(100, parseInt(String(query.limit || 50), 10) || 50));
     const skip = (page - 1) * limit;

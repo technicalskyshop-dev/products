@@ -70,7 +70,7 @@ export class ReviewKitService {
   }
 
   static async getKits(): Promise<ReviewKit[]> {
-    if (this.cachedKits && this.cachedKits.length > 0) {
+    if (this.cachedKits !== null) {
       return this.cachedKits;
     }
 
@@ -107,6 +107,10 @@ export class ReviewKitService {
         }));
         this.cachedKits = resolved;
         return resolved;
+      } else if (Array.isArray(rows)) {
+        // Table exists and query was successful, but table is empty (user deleted all kits)
+        this.cachedKits = [];
+        return [];
       }
     } catch (dbErr) {
       console.warn('Database query for review_kits failed, checking fallbacks:', dbErr);
@@ -117,7 +121,7 @@ export class ReviewKitService {
       if (fs.existsSync(TMP_KITS_FILE)) {
         const raw = fs.readFileSync(TMP_KITS_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.cachedKits = parsed;
           return parsed;
         }
@@ -131,7 +135,7 @@ export class ReviewKitService {
       if (fs.existsSync(KITS_FILE)) {
         const raw = fs.readFileSync(KITS_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.cachedKits = parsed;
           return parsed;
         }
@@ -288,12 +292,12 @@ export class ReviewKitService {
 
   static async deleteKit(id: string): Promise<boolean> {
     const currentKits = await this.getKits();
-    const filtered = currentKits.filter((k) => k.id !== id);
+    const filtered = currentKits.filter((k) => k.id !== id && k.slug !== id);
     this.cachedKits = filtered;
 
     try {
       await this.ensureTable();
-      await prisma.$executeRawUnsafe('DELETE FROM review_kits WHERE id = $1', id);
+      await prisma.$executeRawUnsafe('DELETE FROM review_kits WHERE id = $1 OR slug = $1', id);
     } catch (dbErr) {
       console.error('Failed deleting review kit from DB:', dbErr);
     }
@@ -316,3 +320,4 @@ export class ReviewKitService {
     } catch {}
   }
 }
+

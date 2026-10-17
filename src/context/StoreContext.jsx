@@ -20,7 +20,15 @@ function getCachedJson(key, fallback) {
     const item = localStorage.getItem(key);
     if (item) {
       const parsed = JSON.parse(item);
-      if (Array.isArray(fallback) ? Array.isArray(parsed) && parsed.length > 0 : parsed && typeof parsed === 'object') {
+      if (Array.isArray(fallback)) {
+        if (Array.isArray(parsed)) {
+          // If cached products were wiped to empty array by past glitch, recover using INITIAL_PRODUCTS
+          if (key === 'curator_cached_products' && parsed.length === 0 && fallback.length > 0) {
+            return fallback;
+          }
+          return parsed;
+        }
+      } else if (parsed && typeof parsed === 'object') {
         return parsed;
       }
     }
@@ -205,6 +213,7 @@ export function StoreProvider({ children }) {
 
         if (Array.isArray(prodRes?.products)) {
           setProducts((prev) => {
+            if (prodRes.products.length === 0 && prev && prev.length > 0) return prev;
             if (areProductsEqual(prev, prodRes.products)) return prev;
             try { localStorage.setItem('curator_cached_products', JSON.stringify(prodRes.products)); } catch {}
             return prodRes.products;
@@ -268,6 +277,7 @@ export function StoreProvider({ children }) {
 
       if (Array.isArray(prodRes?.products)) {
         setProducts((prev) => {
+          if (prodRes.products.length === 0 && prev && prev.length > 0) return prev;
           if (areProductsEqual(prev, prodRes.products)) return prev;
           try { localStorage.setItem('curator_cached_products', JSON.stringify(prodRes.products)); } catch {}
           return prodRes.products;
@@ -811,14 +821,22 @@ export function StoreProvider({ children }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setReviewKits((prev) => [newKit, ...prev.filter((k) => k.id !== tempId && k.slug !== newKit.slug)]);
+    setReviewKits((prev) => {
+      const next = [newKit, ...prev.filter((k) => k.id !== tempId && k.slug !== newKit.slug)];
+      try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(next)); } catch {}
+      return next;
+    });
     try {
       const res = await api.createReviewKit(kitData);
       if (res?.kit) {
-        setReviewKits((prev) => [
-          res.kit,
-          ...prev.filter((k) => k.id !== tempId && k.id !== res.kit.id && k.slug !== res.kit.slug),
-        ]);
+        setReviewKits((prev) => {
+          const next = [
+            res.kit,
+            ...prev.filter((k) => k.id !== tempId && k.id !== res.kit.id && k.slug !== res.kit.slug),
+          ];
+          try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(next)); } catch {}
+          return next;
+        });
       }
       notifyCatalogChanged();
       return { success: true, kit: res?.kit || newKit };
@@ -830,13 +848,19 @@ export function StoreProvider({ children }) {
   };
 
   const updateReviewKit = async (id, kitData) => {
-    setReviewKits((prev) =>
-      prev.map((k) => (k.id === id ? { ...k, ...kitData, updatedAt: new Date().toISOString() } : k))
-    );
+    setReviewKits((prev) => {
+      const next = prev.map((k) => (k.id === id ? { ...k, ...kitData, updatedAt: new Date().toISOString() } : k));
+      try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(next)); } catch {}
+      return next;
+    });
     try {
       const res = await api.updateReviewKit(id, kitData);
       if (res?.kit) {
-        setReviewKits((prev) => prev.map((k) => (k.id === id ? res.kit : k)));
+        setReviewKits((prev) => {
+          const next = prev.map((k) => (k.id === id ? res.kit : k));
+          try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(next)); } catch {}
+          return next;
+        });
       }
       notifyCatalogChanged();
       return { success: true, kit: res?.kit };
@@ -848,7 +872,11 @@ export function StoreProvider({ children }) {
   };
 
   const deleteReviewKit = async (id) => {
-    setReviewKits((prev) => prev.filter((k) => k.id !== id));
+    setReviewKits((prev) => {
+      const next = prev.filter((k) => k.id !== id && k.slug !== id);
+      try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(next)); } catch {}
+      return next;
+    });
     try {
       await api.deleteReviewKit(id);
       notifyCatalogChanged();
