@@ -78,6 +78,15 @@ export const api = {
     return request('/api/settings');
   },
 
+  async getReviewKits() {
+    return request('/api/kits');
+  },
+
+  async getReviewKitBySlug(slug) {
+    return request(`/api/kits/${encodeURIComponent(slug)}`);
+  },
+
+
   // --- Protected Admin Auth Endpoints ---
   async login(email, password) {
     const res = await request('/api/admin/auth/login', {
@@ -217,5 +226,31 @@ export const api = {
       body: JSON.stringify(settingsData),
     });
   },
+
+  // --- Protected Admin Review Kits / Video Bundles ---
+  async getAdminReviewKits() {
+    return request('/api/admin/kits');
+  },
+
+  async createReviewKit(kitData) {
+    return request('/api/admin/kits', {
+      method: 'POST',
+      body: JSON.stringify(kitData),
+    });
+  },
+
+  async updateReviewKit(id, kitData) {
+    return request(`/api/admin/kits/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(kitData),
+    });
+  },
+
+  async deleteReviewKit(id) {
+    return request(`/api/admin/kits/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
 };
+
 

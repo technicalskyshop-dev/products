@@ -4,6 +4,7 @@ import { CategoryService } from '../services/categoryService.js';
 import { AffiliateService } from '../services/affiliateService.js';
 import { StorageService } from '../services/storageService.js';
 import { SettingsService } from '../services/settingsService.js';
+import { ReviewKitService } from '../services/reviewKitService.js';
 import { prisma } from '../db/prisma.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -223,4 +224,46 @@ export class AdminController {
       next(error);
     }
   }
+
+  // --- Curated Review Kits / Video Bundles Management ---
+
+  static async getReviewKits(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const kits = await ReviewKitService.getKits();
+      res.status(200).json({ success: true, kits });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createReviewKit(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const kit = await ReviewKitService.createKit(req.body);
+      res.status(201).json({ success: true, kit });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateReviewKit(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const kit = await ReviewKitService.updateKit(String(req.params.id), req.body);
+      if (!kit) {
+        throw new AppError('Review kit not found', 404);
+      }
+      res.status(200).json({ success: true, kit });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteReviewKit(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await ReviewKitService.deleteKit(String(req.params.id));
+      res.status(200).json({ success: true, message: 'Review kit deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

@@ -28,6 +28,24 @@ export const DEFAULT_SETTINGS = {
   glassOpacity: 'medium',
 };
 
+export const DEFAULT_REVIEW_KITS = [
+  {
+    id: 'kit-desk-setup-2026',
+    title: 'Ultimate Clean Desk Setup 2026',
+    slug: 'desk-setup',
+    subtitle: 'All 5 gadgets reviewed in Reel #04 with verified affiliate buy links',
+    description: 'Keychron Mechanical Keyboard, 100W GaN Fast Charger, Fellow Stagg Kettle, iPhone 16 Titanium, and Logitech MX Master 3S.',
+    videoUrl: 'https://youtube.com',
+    badgeText: 'YouTube / Reel #04',
+    productIds: ['prod-01', 'prod-02', 'prod-04', 'f940e2f1-1d38-4e5c-84e3-3c8e815ccedb', 'prod-03'],
+    isFeatured: true,
+    displayOrder: 1,
+    createdAt: '2026-10-17T09:00:00.000Z',
+    updatedAt: '2026-10-17T09:00:00.000Z',
+  },
+];
+
+
 export const INITIAL_PRODUCTS = [
   {
     id: 'f940e2f1-1d38-4e5c-84e3-3c8e815ccedb',

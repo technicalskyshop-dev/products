@@ -3,9 +3,12 @@ import Header from './components/Header';
 import ProductGrid from './components/ProductGrid';
 import AboutModal from './components/AboutModal';
 import ContactModal from './components/ContactModal';
+import ReviewKitsBanner from './components/ReviewKitsBanner';
+import ReviewKitModal from './components/ReviewKitModal';
 import AdminLayout from './admin/AdminLayout';
 import { useStore } from './context/StoreContext';
 import { resolveTheme } from './data/themes';
+
 
 function getInitialPath() {
   if (typeof window === 'undefined') return '/';
@@ -158,6 +161,9 @@ export default function App() {
               aria-label="Curated Product Grid"
               tabIndex={0}
             >
+              {/* 1-Click Multi-Item Review Bundles Banner */}
+              <ReviewKitsBanner />
+
               <ProductGrid products={publicProducts} />
             </section>
           </main>
@@ -174,7 +180,11 @@ export default function App() {
           isOpen={isContactOpen}
           onClose={() => setIsContactOpen(false)}
         />
+
+        {/* 1-Click Review Kit / Bundle Modal */}
+        <ReviewKitModal />
       </div>
     </>
   );
 }
+

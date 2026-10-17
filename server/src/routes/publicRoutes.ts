@@ -12,7 +12,10 @@ router.get('/products/:slug', PublicController.getProductBySlug);
 router.get('/categories', PublicController.getCategories);
 router.get('/categories/:slug/products', PublicController.getCategoryProducts);
 router.get('/settings', PublicController.getSettings);
+router.get('/kits', PublicController.getReviewKits);
+router.get('/kits/:slug', PublicController.getReviewKitBySlug);
 router.get('/health', PublicController.health);
 
 export const publicRoutes = router;
+
 

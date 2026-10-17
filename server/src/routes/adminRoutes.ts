@@ -83,5 +83,12 @@ router.get('/settings', AdminController.getSettings);
 router.patch('/settings', AdminController.updateSettings);
 router.put('/settings', AdminController.updateSettings);
 
+// Review Kits / Bundles
+router.get('/kits', AdminController.getReviewKits);
+router.post('/kits', AdminController.createReviewKit);
+router.patch('/kits/:id', AdminController.updateReviewKit);
+router.delete('/kits/:id', AdminController.deleteReviewKit);
+
 export const adminRoutes = router;
+
 

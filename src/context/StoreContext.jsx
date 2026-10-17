@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { api } from '../api/client';
-import { DEFAULT_SETTINGS, DEFAULT_CATEGORIES, INITIAL_PRODUCTS, slugify } from '../data/products';
+import { DEFAULT_SETTINGS, DEFAULT_CATEGORIES, INITIAL_PRODUCTS, DEFAULT_REVIEW_KITS, slugify } from '../data/products';
 
 export { slugify };
 
@@ -97,6 +97,31 @@ function areSettingsEqual(prevSettings, newSettings) {
   }
 }
 
+function areKitsEqual(prevList, newList) {
+  if (prevList === newList) return true;
+  if (!prevList || !newList) return false;
+  if (prevList.length !== newList.length) return false;
+  for (let i = 0; i < prevList.length; i++) {
+    const a = prevList[i];
+    const b = newList[i];
+    if (
+      a.id !== b.id ||
+      a.title !== b.title ||
+      a.slug !== b.slug ||
+      a.subtitle !== b.subtitle ||
+      a.description !== b.description ||
+      a.videoUrl !== b.videoUrl ||
+      a.badgeText !== b.badgeText ||
+      Boolean(a.isFeatured) !== Boolean(b.isFeatured) ||
+      Number(a.displayOrder || 0) !== Number(b.displayOrder || 0) ||
+      JSON.stringify(a.productIds || []) !== JSON.stringify(b.productIds || [])
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function checkIsAdminRoute() {
   if (typeof window === 'undefined') return false;
   return (
@@ -111,8 +136,11 @@ export function StoreProvider({ children }) {
   const [products, setProducts] = useState(() => getCachedJson('curator_cached_products', INITIAL_PRODUCTS));
   const [categories, setCategories] = useState(() => getCachedJson('curator_cached_categories', DEFAULT_CATEGORIES));
   const [settings, setSettings] = useState(() => getCachedJson('curator_cached_settings', DEFAULT_SETTINGS));
+  const [reviewKits, setReviewKits] = useState(() => getCachedJson('curator_cached_review_kits', DEFAULT_REVIEW_KITS));
+  const [activeKitModal, setActiveKitModal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
 
   // Authentication State
   const [adminUser, setAdminUser] = useState(null);
@@ -156,10 +184,11 @@ export function StoreProvider({ children }) {
         if (!silent) setIsLoading(true);
         setError(null);
 
-        const [catRes, prodRes, setRes] = await Promise.all([
+        const [catRes, prodRes, setRes, kitsRes] = await Promise.all([
           api.getCategories(),
           api.getProducts({ limit: 100 }),
           api.getSettings().catch(() => null),
+          api.getReviewKits().catch(() => null),
         ]);
 
         if (Array.isArray(catRes?.categories)) {
@@ -191,6 +220,14 @@ export function StoreProvider({ children }) {
           });
         }
 
+        if (Array.isArray(kitsRes?.kits)) {
+          setReviewKits((prev) => {
+            if (areKitsEqual(prev, kitsRes.kits)) return prev;
+            try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(kitsRes.kits)); } catch {}
+            return kitsRes.kits;
+          });
+        }
+
         lastPublicFetchTimeRef.current = Date.now();
       } catch (err) {
         console.warn('Backend API unavailable, retaining curated catalog:', err);
@@ -210,10 +247,11 @@ export function StoreProvider({ children }) {
       if (!silent) setIsLoading(true);
       setError(null);
 
-      const [catRes, prodRes, setRes] = await Promise.all([
+      const [catRes, prodRes, setRes, kitsRes] = await Promise.all([
         api.getAdminCategories(),
         api.getAdminProducts({ limit: 100 }),
         api.getAdminSettings().catch(() => null),
+        api.getAdminReviewKits().catch(() => null),
       ]);
 
       if (Array.isArray(catRes?.categories)) {
@@ -244,7 +282,16 @@ export function StoreProvider({ children }) {
           return next;
         });
       }
+
+      if (Array.isArray(kitsRes?.kits)) {
+        setReviewKits((prev) => {
+          if (areKitsEqual(prev, kitsRes.kits)) return prev;
+          try { localStorage.setItem('curator_cached_review_kits', JSON.stringify(kitsRes.kits)); } catch {}
+          return kitsRes.kits;
+        });
+      }
       lastPublicFetchTimeRef.current = Date.now();
+
     } catch (err) {
       console.error('Failed fetching admin data from backend API:', err);
       setError(err.message || 'Unable to load admin catalogue');
@@ -691,6 +738,7 @@ export function StoreProvider({ children }) {
       settings,
       categories: categories.filter((c) => c.id !== 'all'),
       products,
+      reviewKits,
     };
 
     const blob = new Blob([JSON.stringify(catalogData, null, 2)], {
@@ -706,6 +754,112 @@ export function StoreProvider({ children }) {
     URL.revokeObjectURL(url);
   };
 
+  // --- Review Kit Actions & Deep-link Handling ---
+  const openKitModal = useCallback((kitOrSlug) => {
+    let kit = null;
+    if (typeof kitOrSlug === 'string') {
+      kit = reviewKits.find(
+        (k) => k.slug.toLowerCase() === kitOrSlug.toLowerCase() || k.id === kitOrSlug
+      );
+    } else {
+      kit = kitOrSlug;
+    }
+    if (kit) {
+      setActiveKitModal(kit);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('kit', kit.slug);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, [reviewKits]);
+
+  const closeKitModal = useCallback(() => {
+    setActiveKitModal(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('kit');
+      window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+    }
+  }, []);
+
+  // Auto-detect ?kit=<slug> or #kit=<slug> from shared Instagram / YouTube Reel links
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const kitParam = params.get('kit');
+    const hashParam = window.location.hash.startsWith('#kit=')
+      ? window.location.hash.replace('#kit=', '')
+      : null;
+    const targetSlug = kitParam || hashParam;
+
+    if (targetSlug && reviewKits.length > 0) {
+      const matched = reviewKits.find(
+        (k) => k.slug.toLowerCase() === targetSlug.toLowerCase() || k.id === targetSlug
+      );
+      if (matched) {
+        setActiveKitModal(matched);
+      }
+    }
+  }, [reviewKits]);
+
+  const addReviewKit = async (kitData) => {
+    const tempId = kitData.id || `kit-${Date.now()}`;
+    const newKit = {
+      ...kitData,
+      id: tempId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setReviewKits((prev) => [newKit, ...prev.filter((k) => k.id !== tempId && k.slug !== newKit.slug)]);
+    try {
+      const res = await api.createReviewKit(kitData);
+      if (res?.kit) {
+        setReviewKits((prev) => [
+          res.kit,
+          ...prev.filter((k) => k.id !== tempId && k.id !== res.kit.id && k.slug !== res.kit.slug),
+        ]);
+      }
+      notifyCatalogChanged();
+      return { success: true, kit: res?.kit || newKit };
+    } catch (err) {
+      console.error('Failed creating review kit on server:', err);
+      notifyCatalogChanged();
+      return { success: false, error: err.message };
+    }
+  };
+
+  const updateReviewKit = async (id, kitData) => {
+    setReviewKits((prev) =>
+      prev.map((k) => (k.id === id ? { ...k, ...kitData, updatedAt: new Date().toISOString() } : k))
+    );
+    try {
+      const res = await api.updateReviewKit(id, kitData);
+      if (res?.kit) {
+        setReviewKits((prev) => prev.map((k) => (k.id === id ? res.kit : k)));
+      }
+      notifyCatalogChanged();
+      return { success: true, kit: res?.kit };
+    } catch (err) {
+      console.error('Failed updating review kit on server:', err);
+      notifyCatalogChanged();
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteReviewKit = async (id) => {
+    setReviewKits((prev) => prev.filter((k) => k.id !== id));
+    try {
+      await api.deleteReviewKit(id);
+      notifyCatalogChanged();
+      return { success: true };
+    } catch (err) {
+      console.error('Failed deleting review kit on server:', err);
+      notifyCatalogChanged();
+      return { success: false, error: err.message };
+    }
+  };
+
   const refreshCatalog = useCallback(async () => {
     if (adminUser) {
       return await fetchAdminData(false, true);
@@ -719,6 +873,13 @@ export function StoreProvider({ children }) {
     publicProducts,
     publicCategories,
     settings,
+    reviewKits,
+    activeKitModal,
+    openKitModal,
+    closeKitModal,
+    addReviewKit,
+    updateReviewKit,
+    deleteReviewKit,
     isLoading,
     error,
     adminUser,
@@ -745,6 +906,7 @@ export function StoreProvider({ children }) {
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+
 }
 
 export function useStore() {

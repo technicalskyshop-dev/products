@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ProductService } from '../services/productService.js';
 import { CategoryService } from '../services/categoryService.js';
 import { SettingsService } from '../services/settingsService.js';
+import { ReviewKitService } from '../services/reviewKitService.js';
 import { prisma } from '../db/prisma.js';
 
 export class PublicController {
@@ -83,4 +84,36 @@ export class PublicController {
       next(error);
     }
   }
+
+  static async getReviewKits(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const kits = await ReviewKitService.getKits();
+      res.status(200).json({
+        success: true,
+        kits,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getReviewKitBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const kit = await ReviewKitService.getKitBySlug(String(req.params.slug));
+      if (!kit) {
+        res.status(404).json({
+          success: false,
+          error: 'Review kit not found',
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        kit,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

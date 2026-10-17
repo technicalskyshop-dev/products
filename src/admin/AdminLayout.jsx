@@ -16,15 +16,18 @@ import {
   PanelLeftOpen,
   Plus,
   Palette,
+  Film,
 } from 'lucide-react';
 import DashboardOverview from './DashboardOverview';
 import ProductManagement from './ProductManagement';
 import CategoryManagement from './CategoryManagement';
 import SettingsView from './SettingsView';
 import AppearanceView from './AppearanceView';
+import ReviewKitManagement from './ReviewKitManagement';
 import ToastNotification from './ToastNotification';
 import AdminLoginForm from './AdminLoginForm';
 import { useStore } from '../context/StoreContext';
+
 
 export default function AdminLayout({ onNavigateToStorefront }) {
   const store = useStore();
@@ -79,9 +82,11 @@ export default function AdminLayout({ onNavigateToStorefront }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'products', label: 'Products', icon: Package, count: store.products.length },
+    { id: 'kits', label: 'Review Kits', icon: Film, count: store.reviewKits?.length },
     { id: 'appearance', label: 'Theme & Style', icon: Palette },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -409,8 +414,9 @@ export default function AdminLayout({ onNavigateToStorefront }) {
             <span className="hidden sm:inline">Admin</span>
             <ChevronRight size={14} className="text-neutral-400 hidden sm:inline" />
             <span className="text-neutral-900 font-semibold capitalize truncate">
-              {activeTab === 'appearance' ? 'Theme & Style' : activeTab}
+              {activeTab === 'appearance' ? 'Theme & Style' : activeTab === 'kits' ? 'Review Kits' : activeTab}
             </span>
+
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
@@ -481,6 +487,13 @@ export default function AdminLayout({ onNavigateToStorefront }) {
                 onToggleEnabled={store.toggleCategoryEnabled}
                 onReorderCategories={store.reorderCategories}
                 showToast={showToast}
+              />
+            )}
+
+            {activeTab === 'kits' && (
+              <ReviewKitManagement
+                showToast={showToast}
+                onOpenStorefront={onNavigateToStorefront}
               />
             )}
 
