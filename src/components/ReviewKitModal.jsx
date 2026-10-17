@@ -219,13 +219,13 @@ export default function ReviewKitModal() {
                         )}
                       </div>
 
-                      <h4 className="text-xs sm:text-sm font-bold truncate mt-0.5" title={product.name}>
+                      <h4 className={`text-xs sm:text-sm font-bold truncate mt-0.5 ${isDark ? 'text-white' : 'text-neutral-950'}`} title={product.name}>
                         {product.name}
                       </h4>
 
                       {/* Pricing */}
                       <div className="flex items-baseline space-x-2 mt-1">
-                        <span className="text-sm font-extrabold text-neutral-900 dark:text-white">
+                        <span className={`text-sm font-extrabold ${isDark ? 'text-white' : 'text-neutral-950'}`}>
                           ₹{Number(product.priceValue || product.displayPrice?.replace(/[^0-9]/g, '') || 0).toLocaleString('en-IN')}
                         </span>
                         {product.originalPrice && (
@@ -234,11 +234,12 @@ export default function ReviewKitModal() {
                           </span>
                         )}
                         {product.originalPrice && (
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${isDark ? 'text-emerald-400 bg-emerald-500/10' : 'text-emerald-700 bg-emerald-50'}`}>
                             Verified Deal
                           </span>
                         )}
                       </div>
+
                     </div>
                   </div>
 

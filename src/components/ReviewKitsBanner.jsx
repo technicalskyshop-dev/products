@@ -1,12 +1,12 @@
 import React from 'react';
-import { Play, ArrowRight, Sparkles, ShoppingBag } from 'lucide-react';
+import { Play, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { resolveTheme } from '../data/themes';
 
 export default function ReviewKitsBanner() {
   const { reviewKits, openKitModal, products, settings } = useStore();
   const theme = resolveTheme(settings);
-  const isDark = theme.isDark;
+  const isDark = Boolean(theme.isDark);
 
   if (!reviewKits || reviewKits.length === 0) return null;
 
@@ -26,49 +26,54 @@ export default function ReviewKitsBanner() {
   return (
     <div className="w-full mb-6 sm:mb-8">
       {/* 
-        Ultra-Luxury Apple VisionOS / Liquid Glass Showcase Container
+        High-Contrast Luxury Frosted Glass Showcase Capsule
+        Designed with crystal-clear readability on light & dark backgrounds
       */}
       <div
-        className={`relative w-full rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 md:p-7 overflow-hidden transition-all duration-300 group select-none ${
+        className={`relative w-full rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 md:p-7 transition-all duration-300 select-none overflow-hidden ${
           isDark
-            ? 'bg-neutral-900/60 border border-white/15 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-            : 'bg-white/55 hover:bg-white/65 border border-white/90 text-neutral-900 shadow-[0_20px_45px_-12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95)]'
+            ? 'bg-neutral-900/80 border border-white/20 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-white/10'
+            : 'bg-white/75 border border-white text-neutral-950 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,1)]'
         }`}
         style={{
-          backdropFilter: 'blur(32px) saturate(190%)',
-          WebkitBackdropFilter: 'blur(32px) saturate(190%)',
+          backdropFilter: 'blur(30px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(30px) saturate(180%)',
         }}
       >
-        {/* Specular Glass Highlight at Top Rim */}
+        {/* Specular Top Glass Rim Highlight */}
         <div
-          className={`absolute inset-x-0 top-0 h-14 bg-gradient-to-b ${
-            isDark ? 'from-white/15' : 'from-white/80 via-white/30'
+          className={`absolute inset-x-0 top-0 h-16 bg-gradient-to-b ${
+            isDark ? 'from-white/15' : 'from-white/90 via-white/30'
           } to-transparent pointer-events-none rounded-t-[24px] sm:rounded-t-[32px]`}
         />
 
-        {/* Ambient Color Atmosphere (Soft Iridescent Glow behind the frosted glass) */}
-        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-indigo-500/12 via-purple-500/8 to-cyan-400/12 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-gradient-to-tr from-cyan-400/10 via-indigo-400/8 to-transparent rounded-full blur-2xl pointer-events-none" />
+        {/* Ambient Subtle Color Sheen behind the glass */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-gradient-to-tr from-cyan-400/8 via-indigo-400/5 to-transparent rounded-full blur-2xl pointer-events-none" />
 
-        {/* Inner Content Grid */}
+        {/* Inner Content */}
         <div className="relative z-10 flex flex-col space-y-4 sm:space-y-5">
-          {/* Top Bar: Live Pill & Video Link */}
+          {/* Top Bar: Live Badge & Watch Video Link */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center space-x-2 sm:space-x-2.5 flex-wrap gap-y-1">
-              {/* Glass Media Capsule Pill */}
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap gap-y-1">
+              {/* Solid High-Contrast Media Badge */}
               <div
-                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-2xs backdrop-blur-md ${
+                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-xs ${
                   isDark
-                    ? 'bg-white/10 text-neutral-200 border border-white/15'
-                    : 'bg-white/80 text-neutral-800 border border-white shadow-[0_2px_8px_rgba(0,0,0,0.03)]'
+                    ? 'bg-white text-neutral-950 ring-1 ring-white/20'
+                    : 'bg-neutral-950 text-white shadow-sm'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>🎬 {featuredKit.badgeText || 'Curated Review Kit'}</span>
               </div>
 
-              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                • {itemCount} Reviewed Items
+              <span
+                className={`text-xs font-bold tracking-tight ${
+                  isDark ? 'text-neutral-300' : 'text-neutral-600'
+                }`}
+              >
+                • {itemCount} Reviewed Items in 1-Click Bundle
               </span>
             </div>
 
@@ -78,45 +83,61 @@ export default function ReviewKitsBanner() {
                 href={featuredKit.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white transition-colors px-2.5 py-1 rounded-full bg-white/40 dark:bg-white/10 border border-white/60 dark:border-white/10 backdrop-blur-sm shadow-2xs cursor-pointer"
+                className={`inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-1 rounded-full transition-all cursor-pointer shadow-xs ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-200/80'
+                }`}
               >
-                <Play size={11} className="fill-current text-indigo-600 dark:text-indigo-400" />
-                <span>Watch Video</span>
+                <Play size={11} className="fill-current text-indigo-500" />
+                <span>Watch Reel</span>
               </a>
             )}
           </div>
 
-          {/* Title & Description Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          {/* Title, Subtitle, and Primary Launch Button */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-tight font-sans text-neutral-900 dark:text-white">
+              <h2
+                className={`text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight font-sans ${
+                  isDark ? 'text-white' : 'text-neutral-950'
+                }`}
+              >
                 {featuredKit.title}
               </h2>
-              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2">
+              <p
+                className={`text-xs sm:text-sm font-medium mt-1 leading-relaxed ${
+                  isDark ? 'text-neutral-300' : 'text-neutral-600'
+                }`}
+              >
                 {featuredKit.subtitle ||
                   featuredKit.description ||
-                  'All items reviewed together in our latest video with verified affiliate buy links.'}
+                  'Everything reviewed in this video, bundled together with direct verified buy links.'}
               </p>
             </div>
 
-            {/* Desktop Action CTA (Quick 1-Click Launch) */}
+            {/* Desktop Primary Button */}
             <div className="shrink-0 hidden md:block">
               <button
                 onClick={() => openKitModal(featuredKit)}
-                className="px-5 py-2.5 rounded-2xl bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs sm:text-sm font-bold shadow-[0_6px_20px_rgba(0,0,0,0.18)] active:scale-95 transition-all flex items-center space-x-2 cursor-pointer ring-1 ring-white/20 whitespace-nowrap"
+                className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center space-x-2 cursor-pointer ${
+                  isDark
+                    ? 'bg-white hover:bg-neutral-100 text-neutral-950 ring-2 ring-white/30'
+                    : 'bg-neutral-950 hover:bg-black text-white ring-1 ring-black/10'
+                }`}
               >
                 <span>⚡ View All {itemCount} Items</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={15} />
               </button>
             </div>
           </div>
 
           {/* 
-            INTERACTIVE FROSTED GLASS PRODUCT TRAY
-            Shows real items floating in glass chips rather than compressed circles!
+            HIGH-CONTRAST FROSTED PRODUCT TRAY
+            Real floating cards with crystal-clear text & prices
           */}
-          <div className="pt-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <div className="pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
               {displayProducts.map((product, idx) => {
                 const price = Number(
                   product.priceValue || product.displayPrice?.replace(/[^0-9]/g, '') || 0
@@ -126,19 +147,25 @@ export default function ReviewKitsBanner() {
                   <div
                     key={product.id || idx}
                     onClick={() => openKitModal(featuredKit)}
-                    className={`group/card relative flex items-center space-x-2.5 sm:space-x-3 p-2 sm:p-2.5 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 cursor-pointer ${
+                    className={`group/card relative flex items-center space-x-2.5 sm:space-x-3 p-2.5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 cursor-pointer ${
                       isDark
-                        ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/20'
-                        : 'bg-white/70 hover:bg-white/95 border-white/90 shadow-[0_3px_12px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)]'
+                        ? 'bg-neutral-800/80 hover:bg-neutral-800 border-white/15 hover:border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.4)]'
+                        : 'bg-white hover:bg-white border-neutral-200/90 hover:border-neutral-400 shadow-[0_3px_12px_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)]'
                     }`}
                   >
-                    {/* Item Number Pill */}
-                    <span className="absolute -top-1.5 -left-1.5 z-10 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-neutral-900 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-neutral-900 shadow-2xs">
+                    {/* Item Number Tag */}
+                    <span
+                      className={`absolute -top-1.5 -left-1.5 z-10 w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shadow-xs ${
+                        isDark
+                          ? 'bg-white text-neutral-950 ring-2 ring-neutral-900'
+                          : 'bg-neutral-950 text-white ring-2 ring-white'
+                      }`}
+                    >
                       {idx + 1}
                     </span>
 
                     {/* Crisp White Photo Canvas */}
-                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 border border-neutral-100 shadow-2xs overflow-hidden">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 border border-neutral-200/70 shadow-2xs overflow-hidden">
                       <img
                         src={product.imageUrl}
                         alt={product.name}
@@ -150,15 +177,24 @@ export default function ReviewKitsBanner() {
                       />
                     </div>
 
-                    {/* Details */}
+                    {/* Details: High Contrast Crisp Typography */}
                     <div className="min-w-0 flex-1">
-                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block truncate">
-                        {product.categoryLabel || 'Featured'}
+                      <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-indigo-600 block truncate">
+                        {product.categoryLabel || 'Gear'}
                       </span>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate leading-snug">
+                      <h4
+                        className={`text-xs font-bold truncate leading-tight mt-0.5 ${
+                          isDark ? 'text-white' : 'text-neutral-950'
+                        }`}
+                        title={product.name}
+                      >
                         {product.name}
                       </h4>
-                      <span className="text-xs font-extrabold text-neutral-800 dark:text-neutral-200 block mt-0.5">
+                      <span
+                        className={`text-xs font-black block mt-0.5 ${
+                          isDark ? 'text-emerald-400' : 'text-neutral-950'
+                        }`}
+                      >
                         ₹{price}
                       </span>
                     </div>
@@ -172,10 +208,14 @@ export default function ReviewKitsBanner() {
           <div className="md:hidden pt-1">
             <button
               onClick={() => openKitModal(featuredKit)}
-              className="w-full py-2.5 rounded-2xl bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer ring-1 ring-white/20"
+              className={`w-full py-3 rounded-2xl text-xs font-extrabold shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                isDark
+                  ? 'bg-white text-neutral-950'
+                  : 'bg-neutral-950 text-white'
+              }`}
             >
               <span>⚡ View All {itemCount} Items</span>
-              <ArrowRight size={14} />
+              <ArrowRight size={15} />
             </button>
           </div>
         </div>
