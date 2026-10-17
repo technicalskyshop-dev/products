@@ -84,21 +84,32 @@ export default function ReviewKitModal() {
       <div
         className={`w-full max-w-2xl max-h-[92vh] rounded-[28px] sm:rounded-[36px] shadow-2xl border flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200 ${
           isDark
-            ? 'bg-neutral-900/95 border-white/15 text-white'
-            : 'bg-white/95 border-neutral-200/80 text-neutral-900'
+            ? 'bg-neutral-900/80 border-white/15 text-white shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]'
+            : 'bg-white/75 border-white/90 text-neutral-900 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.15),inset_0_1.5px_2px_rgba(255,255,255,0.95)]'
         }`}
         style={{
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          backdropFilter: 'blur(36px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(36px) saturate(190%)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Specular Top Glass Highlight */}
+        <div
+          className={`absolute inset-x-0 top-0 h-16 bg-gradient-to-b ${
+            isDark ? 'from-white/15 via-white/5' : 'from-white/80 via-white/20'
+          } to-transparent pointer-events-none rounded-t-[28px] sm:rounded-t-[36px]`}
+        />
+
+        {/* Ambient Color Atmosphere in Modal */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+
         {/* Top Header */}
-        <div className="p-5 sm:p-6 pb-4 border-b border-neutral-200/60 dark:border-white/10 shrink-0 relative">
+        <div className="p-5 sm:p-6 pb-4 border-b border-neutral-200/50 dark:border-white/10 shrink-0 relative z-10">
           {/* Close Button */}
           <button
             onClick={closeKitModal}
-            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/20 flex items-center justify-center text-neutral-600 dark:text-neutral-300 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/20 border border-white/80 dark:border-white/10 shadow-2xs flex items-center justify-center text-neutral-600 dark:text-neutral-300 transition-all active:scale-90 cursor-pointer"
             aria-label="Close review kit popup"
           >
             <X size={18} />
@@ -106,31 +117,31 @@ export default function ReviewKitModal() {
 
           <div className="pr-10">
             <div className="flex items-center space-x-2 mb-1.5 flex-wrap gap-y-1">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center space-x-1">
-                <span>🎬</span>
-                <span>{activeKitModal.badgeText || 'Reel / Video Review'}</span>
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/80 dark:bg-white/10 text-neutral-800 dark:text-neutral-200 border border-white/80 dark:border-white/15 shadow-2xs flex items-center space-x-1.5 backdrop-blur-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>🎬 {activeKitModal.badgeText || 'Curated Review Kit'}</span>
               </span>
-              <span className="text-xs text-neutral-400 font-medium">
-                • {kitProducts.length} {kitProducts.length === 1 ? 'Reviewed Item' : 'Reviewed Items'}
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                • {kitProducts.length} {kitProducts.length === 1 ? 'Curated Piece' : 'Curated Pieces'}
               </span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
               {activeKitModal.title}
             </h2>
 
             {activeKitModal.subtitle && (
-              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2">
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2">
                 {activeKitModal.subtitle}
               </p>
             )}
           </div>
 
           {/* Action Row: Video Reel Link & Copy Shareable Link */}
-          <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-neutral-100 dark:border-white/5">
+          <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-neutral-200/40 dark:border-white/5">
             {/* Shareable Link Box */}
-            <div className="flex items-center space-x-2 min-w-0 bg-neutral-100 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-neutral-200/60 dark:border-white/5 flex-1">
-              <span className="text-[11px] text-neutral-400 font-medium shrink-0">1-Click Link:</span>
+            <div className="flex items-center space-x-2 min-w-0 bg-white/60 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-white/80 dark:border-white/10 shadow-2xs flex-1 backdrop-blur-sm">
+              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium shrink-0">1-Click Link:</span>
               <span className="text-xs font-mono font-medium truncate text-indigo-600 dark:text-indigo-400 select-all">
                 {shareableUrl.replace(/^https?:\/\//, '')}
               </span>
@@ -149,7 +160,7 @@ export default function ReviewKitModal() {
                 href={activeKitModal.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold hover:opacity-90 transition-opacity shrink-0 justify-center"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold hover:opacity-90 transition-opacity shrink-0 justify-center shadow-xs"
               >
                 <Play size={12} className="fill-current" />
                 <span>Watch Reel</span>
@@ -157,6 +168,7 @@ export default function ReviewKitModal() {
             )}
           </div>
         </div>
+
 
         {/* Product Items List (Scrollable) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scroll">
@@ -174,10 +186,11 @@ export default function ReviewKitModal() {
                   key={product.id || index}
                   className={`p-3 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     isDark
-                      ? 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'
-                      : 'bg-neutral-50/80 border-neutral-200/70 hover:bg-white hover:shadow-xs'
+                      ? 'bg-white/[0.04] border-white/10 hover:bg-white/[0.08]'
+                      : 'bg-white/60 hover:bg-white/95 border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] backdrop-blur-md'
                   }`}
                 >
+
                   {/* Left: Product Thumbnail & Details */}
                   <div className="flex items-center space-x-3.5 min-w-0">
                     <div className="relative shrink-0">
@@ -284,3 +297,4 @@ export default function ReviewKitModal() {
     </div>
   );
 }
+
