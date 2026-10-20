@@ -52,13 +52,24 @@ export default function App() {
       ? 'glass-blur-high'
       : '';
 
-  // Keep document background and dark class synced with theme
+  // Keep document background, wallpaper, and dark class synced with theme
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.toggle('dark', Boolean(isDark));
       document.body.style.backgroundColor = isDark ? '#0f172a' : '#ECEEF2';
+
+      const bgUrl = theme.desktopBg;
+      if (bgUrl) {
+        document.body.style.backgroundImage = `url('${bgUrl}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'top center';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundRepeat = 'no-repeat';
+      } else {
+        document.body.style.backgroundImage = 'none';
+      }
     }
-  }, [isDark]);
+  }, [isDark, theme.desktopBg]);
 
   // Keep route synced with browser history & address bar
   useEffect(() => {

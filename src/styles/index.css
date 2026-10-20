@@ -29,10 +29,9 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Page Background with Sillycorns-style Blueprint Grid & Ribbons */
+/* Page Background Fallback Styles */
 .page-bg {
   background-color: #ECEEF2;
-  background-image: url('/offwhite-bg.jpg');
   background-size: cover;
   background-position: top center;
   background-attachment: fixed;
@@ -41,7 +40,6 @@
 
 @media (max-width: 768px) {
   .page-bg {
-    background-image: url('/offwhite-bg-m.jpg');
     background-attachment: scroll;
   }
 }

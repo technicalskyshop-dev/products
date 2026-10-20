@@ -164,18 +164,26 @@ export function StoreProvider({ children }) {
   const broadcastChannelRef = useRef(null);
 
   // Broadcast catalog mutations across all open browser tabs / windows and local components
-  const notifyCatalogChanged = useCallback(() => {
+  const notifyCatalogChanged = useCallback((payload = null) => {
     try {
       if (typeof window !== 'undefined') {
         const now = Date.now();
         // 1. Send message over long-lived BroadcastChannel (instant 0ms cross-tab sync)
         if (broadcastChannelRef.current) {
-          broadcastChannelRef.current.postMessage({ type: 'CATALOG_MUTATED', timestamp: now });
+          broadcastChannelRef.current.postMessage({
+            type: 'CATALOG_MUTATED',
+            timestamp: now,
+            payload,
+          });
         }
         // 2. Storage event fallback for cross-tab contexts
         localStorage.setItem('curated_discovery_last_sync', String(now));
         // 3. Same-tab local CustomEvent so components in THIS tab update with 0ms latency
-        window.dispatchEvent(new CustomEvent('curated_discovery_local_mutation', { detail: { timestamp: now } }));
+        window.dispatchEvent(
+          new CustomEvent('curated_discovery_local_mutation', {
+            detail: { timestamp: now, payload },
+          })
+        );
       }
     } catch {
       // Non-critical fallback
@@ -376,6 +384,13 @@ export function StoreProvider({ children }) {
         broadcastChannelRef.current = channel;
         channel.onmessage = (event) => {
           if (event.data?.type === 'CATALOG_MUTATED') {
+            if (event.data?.payload?.type === 'SETTINGS_MUTATED' && event.data.payload.settings) {
+              setSettings((prev) => {
+                const next = { ...prev, ...event.data.payload.settings };
+                if (areSettingsEqual(prev, next)) return prev;
+                return next;
+              });
+            }
             syncLatestCatalog(true);
           }
         };
@@ -388,6 +403,17 @@ export function StoreProvider({ children }) {
     const handleStorage = (e) => {
       if (e.key === 'curated_discovery_last_sync') {
         syncLatestCatalog(true);
+      }
+      if (e.key === 'curator_cached_settings' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object') {
+            setSettings((prev) => {
+              if (areSettingsEqual(prev, parsed)) return prev;
+              return { ...prev, ...parsed };
+            });
+          }
+        } catch {}
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -746,7 +772,7 @@ export function StoreProvider({ children }) {
           return next;
         });
       }
-      notifyCatalogChanged();
+      notifyCatalogChanged({ type: 'SETTINGS_MUTATED', settings: res?.settings || newSettings });
       return { success: true, settings: res?.settings };
     } catch (err) {
       console.error('Failed to persist settings to server:', err);

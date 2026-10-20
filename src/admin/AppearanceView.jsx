@@ -72,8 +72,8 @@ export default function AppearanceView({
         themeMode: effectiveMode,
         glassBlur,
         glassOpacity,
-        customBgUrl: customBgUrl.trim(),
-        customBgMobileUrl: customBgMobileUrl.trim(),
+        customBgUrl: (customBgUrl || '').trim(),
+        customBgMobileUrl: (customBgMobileUrl || '').trim(),
       };
 
       const res = await onUpdateSettings?.(payload);
@@ -179,8 +179,8 @@ export default function AppearanceView({
     try {
       const payload = {
         activeTheme,
-        customBgUrl: customBgUrl.trim(),
-        customBgMobileUrl: customBgMobileUrl.trim(),
+        customBgUrl: (customBgUrl || '').trim(),
+        customBgMobileUrl: (customBgMobileUrl || '').trim(),
         themeMode,
         glassBlur,
         glassOpacity,
@@ -234,14 +234,73 @@ export default function AppearanceView({
           <div className="flex items-center space-x-4 sm:space-x-5">
             {/* Live Active Wallpaper Preview Thumbnail */}
             <div
-              className="w-24 sm:w-32 h-16 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-white/20 shadow-lg relative bg-neutral-900 group"
+              className="w-28 sm:w-36 h-20 sm:h-24 rounded-2xl overflow-hidden shrink-0 border-2 border-white/20 shadow-xl relative flex flex-col justify-between p-2 group bg-neutral-900"
               style={{
+                background: currentPreset.previewGradient,
                 backgroundImage: effectiveBg ? `url('${effectiveBg}')` : currentPreset.previewGradient,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: currentPreset.previewPosition || 'center',
+                backgroundRepeat: 'no-repeat',
               }}
             >
-              <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors" />
+              {/* Light mode grid overlay */}
+              {!isCurrentDark && (
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-50"
+                  style={{
+                    backgroundImage:
+                      'radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0)',
+                    backgroundSize: '10px 10px',
+                  }}
+                />
+              )}
+
+              {/* Status pill inside thumbnail */}
+              <div className="relative z-10 flex items-center justify-between">
+                <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500 text-white flex items-center space-x-1 shadow-xs">
+                  <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                  <span>LIVE</span>
+                </span>
+                <span
+                  className="w-2 h-2 rounded-full border border-white/30"
+                  style={{ backgroundColor: currentPreset.accentColor || '#6366f1' }}
+                />
+              </div>
+
+              {/* Mini Frosted Glass Window */}
+              <div
+                className={`relative z-10 rounded-md p-1.5 flex items-center justify-between ${
+                  isCurrentDark
+                    ? 'bg-neutral-950/70 border border-white/15'
+                    : 'bg-white/80 border border-white shadow-xs'
+                }`}
+              >
+                <div className="flex items-center space-x-1 min-w-0">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: currentPreset.accentColor || '#6366f1' }}
+                  />
+                  <span
+                    className={`text-[8px] font-black truncate uppercase ${
+                      isCurrentDark ? 'text-white' : 'text-neutral-900'
+                    }`}
+                  >
+                    TECHNICALSKY
+                  </span>
+                </div>
+                <div className="flex space-x-0.5 shrink-0">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-xs ${
+                      isCurrentDark ? 'bg-white/20' : 'bg-neutral-200'
+                    }`}
+                  />
+                  <span
+                    className={`w-1.5 h-1.5 rounded-xs ${
+                      isCurrentDark ? 'bg-white/20' : 'bg-neutral-200'
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -333,39 +392,159 @@ export default function AppearanceView({
                 }`}
               >
                 <div>
-                  {/* Clean, Full-Bleed Wallpaper Preview Tile (NO awkward overlays) */}
+                  {/* Rich Miniature Storefront Wallpaper & Frosted Glass Preview */}
                   <div
-                    className="w-full aspect-[16/10] rounded-xl overflow-hidden relative shadow-inner border border-black/5 flex flex-col justify-between p-3 bg-neutral-900"
+                    className="w-full aspect-[16/10] rounded-xl overflow-hidden relative shadow-md border border-neutral-200/90 dark:border-white/10 flex flex-col justify-between p-2 sm:p-2.5 transition-transform duration-300 group-hover:scale-[1.01] bg-neutral-900"
                     style={{
                       background: theme.previewGradient,
                       backgroundImage: theme.desktopBg ? `url('${theme.desktopBg}')` : theme.previewGradient,
                       backgroundSize: 'cover',
-                      backgroundPosition: 'center',
+                      backgroundPosition: theme.previewPosition || 'center',
+                      backgroundRepeat: 'no-repeat',
                     }}
                   >
+                    {/* Light Mode coordinate grid pattern overlay for crisp architectural feel */}
+                    {theme.mode !== 'dark' && (
+                      <div
+                        className="absolute inset-0 pointer-events-none opacity-60"
+                        style={{
+                          backgroundImage:
+                            'radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0)',
+                          backgroundSize: '12px 12px',
+                        }}
+                      />
+                    )}
+
+                    {/* Subtle top specular sheen */}
+                    <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+
                     {/* Top Overlay Badges */}
-                    <div className="flex items-center justify-between">
+                    <div className="relative z-10 flex items-center justify-between">
                       <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs ${
+                        className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md shadow-xs flex items-center space-x-1 ${
                           theme.mode === 'dark'
-                            ? 'bg-black/70 text-white border border-white/10'
-                            : 'bg-white/90 text-neutral-900 border border-black/5'
+                            ? 'bg-neutral-900/80 text-neutral-200 border border-white/15'
+                            : 'bg-white/90 text-neutral-800 border border-neutral-900/10'
                         }`}
                       >
-                        {theme.mode === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: theme.accentColor || '#6366f1' }}
+                        />
+                        <span>{theme.mode === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
                       </span>
 
                       {isSelected ? (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold flex items-center space-x-1 shadow-md animate-fade-in">
-                          <Check size={12} className="stroke-[3]" />
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9.5px] font-extrabold flex items-center space-x-1 shadow-md animate-fade-in">
+                          <Check size={11} className="stroke-[3]" />
                           <span>Active</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold text-white/90 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                        <span
+                          className={`text-[9.5px] font-semibold backdrop-blur-md px-2 py-0.5 rounded-full ${
+                            theme.mode === 'dark'
+                              ? 'bg-black/60 text-white/90 border border-white/10'
+                              : 'bg-white/80 text-neutral-700 border border-black/5'
+                          }`}
+                        >
                           {theme.tag}
                         </span>
                       )}
                     </div>
+
+                    {/* Center: Floating Liquid Frosted Glass Storefront Panel */}
+                    <div
+                      className={`relative z-10 w-full rounded-lg p-2 flex flex-col justify-between my-auto transition-all shadow-sm ${
+                        theme.mode === 'dark'
+                          ? 'bg-neutral-950/60 backdrop-blur-md border border-white/15'
+                          : 'bg-white/70 backdrop-blur-md border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.06)]'
+                      }`}
+                    >
+                      {/* Mini Header */}
+                      <div
+                        className={`flex items-center justify-between pb-1.5 mb-1.5 border-b ${
+                          theme.mode === 'dark' ? 'border-white/10' : 'border-neutral-900/5'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: theme.accentColor || '#6366f1' }}
+                          />
+                          <span
+                            className={`text-[8px] font-black tracking-widest uppercase ${
+                              theme.mode === 'dark' ? 'text-white' : 'text-neutral-900'
+                            }`}
+                          >
+                            TECHNICALSKY
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-1">
+                          <span
+                            className={`w-3 h-1 rounded-full ${
+                              theme.mode === 'dark' ? 'bg-white/50' : 'bg-neutral-900/40'
+                            }`}
+                          />
+                          <span
+                            className={`w-3 h-1 rounded-full ${
+                              theme.mode === 'dark' ? 'bg-white/20' : 'bg-neutral-900/15'
+                            }`}
+                          />
+                          <span
+                            className={`w-3 h-1 rounded-full ${
+                              theme.mode === 'dark' ? 'bg-white/20' : 'bg-neutral-900/15'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Mini 3-Product Cards Row */}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { price: '₹9,999' },
+                          { price: '₹4,499' },
+                          { price: '₹2,299' },
+                        ].map((card, i) => (
+                          <div
+                            key={i}
+                            className={`rounded-md p-1 flex flex-col justify-between border ${
+                              theme.mode === 'dark'
+                                ? 'bg-neutral-900/70 border-white/10 shadow-[0_2px_6px_rgba(0,0,0,0.4)]'
+                                : 'bg-white/85 border-white shadow-[0_2px_6px_rgba(0,0,0,0.04)]'
+                            }`}
+                          >
+                            <div
+                              className={`w-full aspect-[4/3] rounded-xs mb-1 flex items-center justify-center ${
+                                theme.mode === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100'
+                              }`}
+                            >
+                              <div
+                                className="w-2.5 h-2.5 rounded-xs opacity-75"
+                                style={{ backgroundColor: theme.accentColor || '#6366f1' }}
+                              />
+                            </div>
+                            <div
+                              className={`h-1 w-3/4 rounded-full mb-0.5 ${
+                                theme.mode === 'dark' ? 'bg-white/40' : 'bg-neutral-900/30'
+                              }`}
+                            />
+                            <span
+                              className="text-[7.5px] font-extrabold tracking-tight"
+                              style={{ color: theme.accentColor || '#6366f1' }}
+                            >
+                              {card.price}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bottom Accent Color Indicator */}
+                    <div
+                      className="relative z-10 w-full h-0.5 rounded-full opacity-80"
+                      style={{ backgroundColor: theme.accentColor || '#6366f1' }}
+                    />
                   </div>
 
                   {/* Theme Info */}
