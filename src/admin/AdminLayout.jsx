@@ -501,6 +501,7 @@ export default function AdminLayout({ onNavigateToStorefront }) {
               <AppearanceView
                 settings={store.settings}
                 onUpdateSettings={store.updateSettings}
+                onSyncSettings={store.syncSettingsState}
                 showToast={showToast}
                 onNavigateToStorefront={onNavigateToStorefront}
               />

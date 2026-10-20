@@ -24,10 +24,13 @@ import { api } from '../api/client';
 export default function AppearanceView({
   settings,
   onUpdateSettings,
+  onSyncSettings,
   showToast,
   onNavigateToStorefront,
 }) {
-  const [activeTheme, setActiveTheme] = useState(settings?.activeTheme || 'offwhite-grid');
+  // Single source of truth for active theme directly from store settings
+  const activeTheme = settings?.activeTheme || 'offwhite-grid';
+
   const [customBgUrl, setCustomBgUrl] = useState(settings?.customBgUrl || '');
   const [customBgMobileUrl, setCustomBgMobileUrl] = useState(settings?.customBgMobileUrl || '');
   const [themeMode, setThemeMode] = useState(settings?.themeMode || 'light');
@@ -40,13 +43,13 @@ export default function AppearanceView({
   const [isApplyingThemeId, setIsApplyingThemeId] = useState(null);
   const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
 
+  const activationInProgressRef = useRef(false);
   const desktopFileInputRef = useRef(null);
   const mobileFileInputRef = useRef(null);
 
-  // Sync state if settings prop changes from backend
+  // Sync editable input state when settings prop changes from backend
   useEffect(() => {
     if (settings) {
-      setActiveTheme(settings.activeTheme || 'offwhite-grid');
       setCustomBgUrl(settings.customBgUrl || '');
       setCustomBgMobileUrl(settings.customBgMobileUrl || '');
       setThemeMode(settings.themeMode || 'light');
@@ -55,16 +58,48 @@ export default function AppearanceView({
     }
   }, [settings]);
 
-  // Instant 1-Click Activate Theme
+  // On page load and refresh, fetch the active theme from the backend instead of relying on stale local state
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchBackendThemeSettings() {
+      try {
+        const res = await api.getAdminSettings().catch(() => api.getSettings());
+        if (isMounted && res?.settings) {
+          onSyncSettings?.(res.settings);
+          setCustomBgUrl(res.settings.customBgUrl || '');
+          setCustomBgMobileUrl(res.settings.customBgMobileUrl || '');
+          setThemeMode(res.settings.themeMode || 'light');
+          setGlassBlur(res.settings.glassBlur || 'medium');
+          setGlassOpacity(res.settings.glassOpacity || 'medium');
+        }
+      } catch (err) {
+        console.warn('Could not fetch fresh active theme on load:', err);
+      }
+    }
+
+    fetchBackendThemeSettings();
+    return () => {
+      isMounted = false;
+    };
+  }, [onSyncSettings]);
+
+  // 1-Click Activate Theme with Single Source of Truth & Zero-Overlap Protection
   const handleActivateTheme = async (themeId, overrideMode = null) => {
+    // 1. Prevent duplicate or overlapping activation requests while one is in progress
+    if (activationInProgressRef.current || isApplyingThemeId) {
+      return;
+    }
+
+    // If theme is already active and no mode override, no-op
+    if (themeId === activeTheme && !overrideMode) {
+      return;
+    }
+
+    activationInProgressRef.current = true;
     setIsApplyingThemeId(themeId);
-    setActiveTheme(themeId);
 
     const preset = PRESET_THEMES.find((p) => p.id === themeId);
     const effectiveMode = overrideMode || (preset && preset.mode !== 'custom' ? preset.mode : themeMode);
-    if (preset && preset.mode !== 'custom') {
-      setThemeMode(preset.mode);
-    }
 
     try {
       const payload = {
@@ -76,8 +111,12 @@ export default function AppearanceView({
         customBgMobileUrl: (customBgMobileUrl || '').trim(),
       };
 
+      // 2. Call backend - UI will update ONLY after server confirms success
       const res = await onUpdateSettings?.(payload);
       if (res?.success) {
+        if (preset && preset.mode !== 'custom') {
+          setThemeMode(preset.mode);
+        }
         showToast?.({
           title: 'Theme Activated Live!',
           message: `"${preset?.name || 'Theme'}" is now live on technicalskystuff.com`,
@@ -88,6 +127,7 @@ export default function AppearanceView({
       }
     } catch (err) {
       console.error('Failed to activate theme:', err);
+      // 3. If activation fails, keep previous theme active and show error
       showToast?.({
         title: 'Theme Activation Failed',
         message: err.message || 'Please check your connection and try again',
@@ -95,6 +135,7 @@ export default function AppearanceView({
       });
     } finally {
       setIsApplyingThemeId(null);
+      activationInProgressRef.current = false;
     }
   };
 
@@ -143,8 +184,6 @@ export default function AppearanceView({
       } else {
         setCustomBgUrl(url);
       }
-
-      setActiveTheme('custom');
 
       // Auto-save the uploaded wallpaper to settings
       const payload = {
@@ -380,15 +419,21 @@ export default function AppearanceView({
           {filteredThemes.map((theme) => {
             const isSelected = activeTheme === theme.id;
             const isApplying = isApplyingThemeId === theme.id;
+            const isAnyApplying = Boolean(isApplyingThemeId);
 
             return (
               <div
                 key={theme.id}
-                onClick={() => handleActivateTheme(theme.id)}
-                className={`group relative rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                onClick={() => {
+                  if (isAnyApplying) return;
+                  if (!isSelected) handleActivateTheme(theme.id);
+                }}
+                className={`group relative rounded-2xl p-4 border-2 transition-all flex flex-col justify-between ${
                   isSelected
                     ? 'border-indigo-600 bg-indigo-50/25 shadow-lg ring-2 ring-indigo-500/20'
-                    : 'border-neutral-200/90 hover:border-neutral-300 bg-white hover:shadow-md hover:-translate-y-0.5'
+                    : isAnyApplying
+                    ? 'border-neutral-200/60 bg-white opacity-60 cursor-not-allowed'
+                    : 'border-neutral-200/90 hover:border-neutral-300 bg-white hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
                 }`}
               >
                 <div>
@@ -568,22 +613,27 @@ export default function AppearanceView({
                       <Check size={14} className="stroke-[3] text-emerald-600" />
                       <span>Currently Active on Store</span>
                     </div>
+                  ) : isApplying ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm cursor-wait animate-pulse"
+                    >
+                      <RefreshCw size={13} className="animate-spin text-white" />
+                      <span>Activating Theme...</span>
+                    </button>
                   ) : (
                     <button
                       type="button"
-                      disabled={isApplying}
+                      disabled={isAnyApplying}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleActivateTheme(theme.id);
                       }}
-                      className="w-full py-2.5 px-3 rounded-xl bg-neutral-900 hover:bg-indigo-600 active:scale-[0.98] text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 px-3 rounded-xl bg-neutral-900 hover:bg-indigo-600 active:scale-[0.98] text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
                     >
-                      {isApplying ? (
-                        <RefreshCw size={13} className="animate-spin" />
-                      ) : (
-                        <Zap size={13} />
-                      )}
-                      <span>{isApplying ? 'Applying Theme...' : 'Activate Theme'}</span>
+                      <Zap size={13} />
+                      <span>Activate Theme</span>
                     </button>
                   )}
                 </div>
@@ -622,8 +672,9 @@ export default function AppearanceView({
             {!isCustom && (
               <button
                 type="button"
+                disabled={Boolean(isApplyingThemeId)}
                 onClick={() => handleActivateTheme('custom')}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-2 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Switch to Custom Mode
               </button>
@@ -631,8 +682,9 @@ export default function AppearanceView({
 
             <button
               type="button"
+              disabled={Boolean(isApplyingThemeId)}
               onClick={handleSaveCustomConfig}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-xs cursor-pointer"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={13} />
               <span>Save Adjustments</span>
@@ -699,7 +751,6 @@ export default function AppearanceView({
                 value={customBgUrl}
                 onChange={(e) => {
                   setCustomBgUrl(e.target.value);
-                  setActiveTheme('custom');
                 }}
                 placeholder="https://example.com/wallpaper.jpg"
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -765,7 +816,6 @@ export default function AppearanceView({
                 value={customBgMobileUrl}
                 onChange={(e) => {
                   setCustomBgMobileUrl(e.target.value);
-                  setActiveTheme('custom');
                 }}
                 placeholder="https://example.com/mobile-wallpaper.jpg"
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -784,11 +834,12 @@ export default function AppearanceView({
             <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl">
               <button
                 type="button"
+                disabled={Boolean(isApplyingThemeId)}
                 onClick={() => {
                   setThemeMode('light');
                   if (isCustom) handleActivateTheme('custom', 'light');
                 }}
-                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
                   themeMode === 'light'
                     ? 'bg-white text-neutral-900 shadow-xs'
                     : 'text-neutral-500 hover:text-neutral-900'
@@ -800,11 +851,12 @@ export default function AppearanceView({
 
               <button
                 type="button"
+                disabled={Boolean(isApplyingThemeId)}
                 onClick={() => {
                   setThemeMode('dark');
                   if (isCustom) handleActivateTheme('custom', 'dark');
                 }}
-                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
                   themeMode === 'dark'
                     ? 'bg-neutral-900 text-white shadow-xs'
                     : 'text-neutral-500 hover:text-neutral-900'

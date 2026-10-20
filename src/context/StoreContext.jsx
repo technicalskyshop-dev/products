@@ -755,28 +755,34 @@ export function StoreProvider({ children }) {
     notifyCatalogChanged();
   };
 
-  const updateSettings = async (newSettings) => {
-    // 1. Instant optimistic update in React state
+  const syncSettingsState = useCallback((newSettings) => {
+    if (!newSettings || typeof newSettings !== 'object') return;
     setSettings((prev) => {
       const next = { ...prev, ...newSettings };
+      if (areSettingsEqual(prev, next)) return prev;
       try { localStorage.setItem('curator_cached_settings', JSON.stringify(next)); } catch {}
       return next;
     });
+  }, []);
+
+  const updateSettings = async (newSettings) => {
     try {
-      // 2. Persist to Express backend and data/settings.json
+      // 1. Persist to Express backend first - do NOT apply optimistic update until server confirms
       const res = await api.updateSettings(newSettings);
       if (res?.settings) {
+        // 2. Update React state & localStorage cache ONLY after server confirms success
         setSettings((prev) => {
           const next = { ...prev, ...res.settings };
           try { localStorage.setItem('curator_cached_settings', JSON.stringify(next)); } catch {}
           return next;
         });
+        notifyCatalogChanged({ type: 'SETTINGS_MUTATED', settings: res.settings });
+        return { success: true, settings: res.settings };
       }
-      notifyCatalogChanged({ type: 'SETTINGS_MUTATED', settings: res?.settings || newSettings });
-      return { success: true, settings: res?.settings };
+      throw new Error(res?.error || 'Server did not return confirmed settings');
     } catch (err) {
       console.error('Failed to persist settings to server:', err);
-      return { success: false, error: err.message };
+      return { success: false, error: err.message || 'Failed to update settings' };
     }
   };
 
@@ -967,6 +973,7 @@ export function StoreProvider({ children }) {
     toggleCategoryEnabled,
     reorderCategories,
     updateSettings,
+    syncSettingsState,
     exportCatalogJson,
     refreshCatalog,
     syncLatestCatalog,
