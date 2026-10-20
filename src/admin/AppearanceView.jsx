@@ -65,6 +65,7 @@ export default function AppearanceView({
       try {
         const res = await api.getAdminSettings().catch(() => api.getSettings());
         if (isMounted && res?.settings) {
+          if (activationInProgressRef.current) return;
           onSyncSettings?.(res.settings);
           setCustomBgUrl(res.settings.customBgUrl || '');
           setCustomBgMobileUrl(res.settings.customBgMobileUrl || '');

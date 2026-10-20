@@ -64,11 +64,7 @@ export class SettingsService {
   }
 
   static async getSettings(): Promise<StoreSettings> {
-    if (this.cachedSettings) {
-      return this.cachedSettings;
-    }
-
-    // 1. Try reading from Supabase PostgreSQL database (shared across all Vercel lambdas)
+    // 1. Primary Persistent Source of Truth: Supabase PostgreSQL database (shared across all Vercel lambdas)
     try {
       await this.ensureTable();
       const rows = await prisma.$queryRawUnsafe<Array<{ data: any }>>(
@@ -76,15 +72,38 @@ export class SettingsService {
         'current'
       );
       if (rows && rows.length > 0 && rows[0].data) {
-        const resolved: StoreSettings = { ...DEFAULT_SETTINGS, ...rows[0].data };
+        const dbData = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+        const resolved: StoreSettings = { ...DEFAULT_SETTINGS, ...dbData };
         this.cachedSettings = resolved;
         return resolved;
+      } else if (rows && rows.length === 0) {
+        // Table exists but no row seeded yet: seed default settings into database
+        const seedSettings: StoreSettings = { ...DEFAULT_SETTINGS };
+        try {
+          if (fs.existsSync(SETTINGS_FILE)) {
+            const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+            Object.assign(seedSettings, JSON.parse(raw));
+          }
+        } catch {}
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO store_settings (id, data, updated_at) 
+           VALUES ($1, $2::jsonb, NOW()) 
+           ON CONFLICT (id) DO NOTHING`,
+          'current',
+          JSON.stringify(seedSettings)
+        );
+        this.cachedSettings = seedSettings;
+        return seedSettings;
       }
     } catch (dbErr) {
       console.warn('Database read for settings failed, checking fallbacks:', dbErr);
     }
 
-    // 2. Try reading from /tmp (local container cache)
+    // 2. Fallbacks if database is unreachable
+    if (this.cachedSettings) {
+      return this.cachedSettings;
+    }
+
     try {
       if (fs.existsSync(TMP_SETTINGS_FILE)) {
         const raw = fs.readFileSync(TMP_SETTINGS_FILE, 'utf-8');
@@ -97,7 +116,6 @@ export class SettingsService {
       // Fallback to project root file
     }
 
-    // 3. Try reading from project data file
     try {
       if (fs.existsSync(SETTINGS_FILE)) {
         const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
@@ -139,10 +157,8 @@ export class SettingsService {
       defaultFlipkartTag: partial.defaultFlipkartTag !== undefined ? partial.defaultFlipkartTag.trim() : current.defaultFlipkartTag,
     };
 
-    // 1. Immediately update memory cache
-    this.cachedSettings = updated;
-
-    // 2. Persist to Supabase PostgreSQL database
+    // 1. Persist to Supabase PostgreSQL database first (primary single source of truth)
+    let dbSuccess = false;
     try {
       await this.ensureTable();
       await prisma.$executeRawUnsafe(
@@ -152,9 +168,16 @@ export class SettingsService {
         'current',
         JSON.stringify(updated)
       );
+      dbSuccess = true;
     } catch (dbErr) {
       console.error('Failed saving settings to Supabase DB:', dbErr);
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error(`Failed to persist settings to database: ${(dbErr as Error).message || dbErr}`);
+      }
     }
+
+    // 2. Only cache in memory once persisted (or local dev fallback)
+    this.cachedSettings = updated;
 
     // 3. Write to /tmp for guaranteed write access in serverless environments
     try {

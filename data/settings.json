@@ -6,5 +6,9 @@
   "defaultAmazonTag": "technicalsky-21",
   "defaultFlipkartTag": "technicalsky",
   "inquiryEmail": "contact@technicalsky.com",
-  "announcementNotice": "TechnicalSky verified affiliate partner of Amazon & Flipkart"
+  "announcementNotice": "TechnicalSky verified affiliate partner of Amazon & Flipkart",
+  "activeTheme": "offwhite-grid",
+  "themeMode": "light",
+  "glassBlur": "medium",
+  "glassOpacity": "medium"
 }

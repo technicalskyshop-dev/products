@@ -75,6 +75,9 @@ export class PublicController {
 
   static async getSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const settings = await SettingsService.getSettings();
       res.status(200).json({
         success: true,

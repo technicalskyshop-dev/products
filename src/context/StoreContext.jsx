@@ -390,6 +390,7 @@ export function StoreProvider({ children }) {
                 if (areSettingsEqual(prev, next)) return prev;
                 return next;
               });
+              return;
             }
             syncLatestCatalog(true);
           }
@@ -419,7 +420,12 @@ export function StoreProvider({ children }) {
     window.addEventListener('storage', handleStorage);
 
     // 3. Same-tab local CustomEvent listener (Instant local sync)
-    const handleLocalMutation = () => {
+    const handleLocalMutation = (e) => {
+      // In this tab, settings mutations have already updated React state and localStorage directly from the confirmed API response.
+      // Avoid immediate re-fetch race condition against replication
+      if (e?.detail?.payload?.type === 'SETTINGS_MUTATED') {
+        return;
+      }
       syncLatestCatalog(true);
     };
     window.addEventListener('curated_discovery_local_mutation', handleLocalMutation);
