@@ -1032,9 +1032,8 @@ export default function AppearanceView({
               </div>
 
               {/* Title row */}
-              <div className="py-2.5">
-                <span className="text-base font-serif font-normal">/ Shop</span>
-                <span className="text-[10px] opacity-60 ml-2">Curated discoveries</span>
+              <div className="py-2">
+                <span className="text-[10px] opacity-60">Curated discoveries</span>
               </div>
 
               {/* Mini Cards Grid */}

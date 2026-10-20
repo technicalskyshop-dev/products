@@ -147,19 +147,10 @@ export default function App() {
           {/* Body: Full-Width Product Catalogue (3-Column Mobile, 4-Column Desktop) */}
           <main className="flex-1 min-h-0 px-3 sm:px-8 lg:px-12 pt-4 sm:pt-7 pb-4 flex flex-col md:overflow-hidden">
             {/* Subtle minimal collection header */}
-            <div className="flex items-baseline justify-between mb-3.5 sm:mb-6 shrink-0 px-1">
-              <div className="flex items-baseline space-x-2.5 sm:space-x-3">
-                <h1
-                  className={`font-serif text-2xl sm:text-3xl md:text-4xl tracking-tight font-normal ${
-                    isDark ? 'text-white' : 'text-neutral-900'
-                  }`}
-                >
-                  / Shop
-                </h1>
-                <span className="text-[11px] sm:text-xs text-neutral-400 font-normal">
-                  {publicProducts.length} curated {publicProducts.length === 1 ? 'piece' : 'pieces'}
-                </span>
-              </div>
+            <div className="flex items-center justify-between mb-3.5 sm:mb-6 shrink-0 px-1">
+              <span className="text-[11px] sm:text-xs text-neutral-400 font-normal">
+                {publicProducts.length} curated {publicProducts.length === 1 ? 'piece' : 'pieces'}
+              </span>
               <p className={`text-xs font-normal hidden sm:block ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 Direct affiliate discoveries. Click any piece to purchase instantly.
               </p>
