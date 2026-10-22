@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "kit-1792472574380-o3lzr",
+    "title": "jksagfkhjramrfher",
+    "slug": "jksagfkhjramrfher",
+    "subtitle": "",
+    "description": "",
+    "videoUrl": "",
+    "badgeText": "Reel / Review #01",
+    "productIds": ["prod-11", "prod-10", "prod-09", "prod-08", "prod-07"],
+    "isFeatured": true,
+    "displayOrder": 0,
+    "createdAt": "2026-10-20T05:02:54.381Z",
+    "updatedAt": "2026-10-20T05:02:54.381Z"
+  }
+]

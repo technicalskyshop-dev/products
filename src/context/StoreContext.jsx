@@ -144,7 +144,7 @@ export function StoreProvider({ children }) {
   const [products, setProducts] = useState(() => getCachedJson('curator_cached_products', INITIAL_PRODUCTS));
   const [categories, setCategories] = useState(() => getCachedJson('curator_cached_categories', DEFAULT_CATEGORIES));
   const [settings, setSettings] = useState(() => getCachedJson('curator_cached_settings', DEFAULT_SETTINGS));
-  const [reviewKits, setReviewKits] = useState(() => getCachedJson('curator_cached_review_kits', []));
+  const [reviewKits, setReviewKits] = useState(() => getCachedJson('curator_cached_review_kits', DEFAULT_REVIEW_KITS));
   const [activeKitModal, setActiveKitModal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
