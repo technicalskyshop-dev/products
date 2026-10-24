@@ -116,10 +116,10 @@ function areKitsEqual(prevList, newList) {
       a.id !== b.id ||
       a.title !== b.title ||
       a.slug !== b.slug ||
-      a.subtitle !== b.subtitle ||
-      a.description !== b.description ||
-      a.videoUrl !== b.videoUrl ||
-      a.badgeText !== b.badgeText ||
+      (a.subtitle || '') !== (b.subtitle || '') ||
+      (a.description || '') !== (b.description || '') ||
+      (a.videoUrl || '') !== (b.videoUrl || '') ||
+      (a.badgeText || '') !== (b.badgeText || '') ||
       Boolean(a.isFeatured) !== Boolean(b.isFeatured) ||
       Number(a.displayOrder || 0) !== Number(b.displayOrder || 0) ||
       JSON.stringify(a.productIds || []) !== JSON.stringify(b.productIds || [])

@@ -24,7 +24,7 @@ export default function ReviewKitsBanner() {
   const itemCount = displayProducts.length;
 
   return (
-    <div className="w-full mb-6 sm:mb-8">
+    <div className="w-full mb-6 sm:mb-8 animate-fade-in-up">
       {/* 
         High-Contrast Luxury Frosted Glass Showcase Capsule
         Designed with crystal-clear readability on light & dark backgrounds
