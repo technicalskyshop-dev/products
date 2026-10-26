@@ -22,9 +22,16 @@ function getCachedJson(key, fallback) {
       const parsed = JSON.parse(item);
       if (Array.isArray(fallback)) {
         if (Array.isArray(parsed)) {
-          // If cached products were wiped to empty array by past glitch, recover using INITIAL_PRODUCTS
-          if (key === 'curator_cached_products' && parsed.length === 0 && fallback.length > 0) {
-            return fallback;
+          if (key === 'curator_cached_products') {
+            if (parsed.length === 0 && fallback.length > 0) {
+              return fallback;
+            }
+            // Filter out any stale legacy products (e.g. deleted demo items like prod-02)
+            const cleaned = parsed.filter((p) => p && p.id !== 'prod-02');
+            if (cleaned.length !== parsed.length) {
+              try { localStorage.setItem(key, JSON.stringify(cleaned)); } catch {}
+              return cleaned;
+            }
           }
           return parsed;
         }
