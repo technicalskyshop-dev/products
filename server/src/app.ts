@@ -24,11 +24,19 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static Asset Uploads
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Static Asset Uploads with CDN caching
+app.use(
+  '/uploads',
+  express.static(UPLOADS_DIR, {
+    maxAge: '1d',
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    },
+  })
+);
 
-// Disable caching for dynamic API responses across edge proxies, CDNs, and browsers
-app.use((_req, res, next) => {
+// Admin endpoints must always bypass cache across proxies, CDNs, and browsers
+app.use(['/api/admin', '/admin'], (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');

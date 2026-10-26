@@ -8,6 +8,7 @@ import { prisma } from '../db/prisma.js';
 export class PublicController {
   static async getProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=15, s-maxage=60, stale-while-revalidate=300');
       const data = await ProductService.getPublicProducts(req.query as any);
       res.status(200).json({
         success: true,
@@ -20,6 +21,7 @@ export class PublicController {
 
   static async getProductBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=600');
       const product = await ProductService.getPublicProductBySlug(String(req.params.slug));
       res.status(200).json({
         success: true,
@@ -32,6 +34,7 @@ export class PublicController {
 
   static async getCategories(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=900');
       const categories = await CategoryService.getPublicCategories();
       res.status(200).json({
         success: true,
@@ -44,6 +47,7 @@ export class PublicController {
 
   static async getCategoryProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=15, s-maxage=60, stale-while-revalidate=300');
       const data = await CategoryService.getPublicCategoryProducts(String(req.params.slug));
       res.status(200).json({
         success: true,
@@ -75,9 +79,7 @@ export class PublicController {
 
   static async getSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
+      res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=30, stale-while-revalidate=120');
       const settings = await SettingsService.getSettings();
       res.status(200).json({
         success: true,
@@ -90,6 +92,7 @@ export class PublicController {
 
   static async getReviewKits(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=15, s-maxage=60, stale-while-revalidate=300');
       const kits = await ReviewKitService.getKits();
       res.status(200).json({
         success: true,
@@ -102,6 +105,7 @@ export class PublicController {
 
   static async getReviewKitBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=600');
       const kit = await ReviewKitService.getKitBySlug(String(req.params.slug));
       if (!kit) {
         res.status(404).json({

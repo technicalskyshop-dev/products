@@ -9,9 +9,11 @@ import {
 } from '../validation/productSchemas.js';
 
 export class ProductService {
+  private static isSeeded = false;
   private static seedingPromise: Promise<void> | null = null;
 
   static async ensureSeeded() {
+    if (this.isSeeded) return;
     try {
       const count = await prisma.product.count();
       if (count === 0) {
@@ -21,6 +23,7 @@ export class ProductService {
           this.seedingPromise = runSeed()
             .then(() => {
               console.log('✅ Auto-seed completed successfully.');
+              this.isSeeded = true;
             })
             .catch((err) => {
               console.error('Auto-seed failed:', err);
@@ -30,6 +33,8 @@ export class ProductService {
             });
         }
         await this.seedingPromise;
+      } else {
+        this.isSeeded = true;
       }
     } catch (e) {
       console.warn('Auto-seed check non-fatal error:', e);

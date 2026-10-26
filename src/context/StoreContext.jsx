@@ -437,27 +437,28 @@ export function StoreProvider({ children }) {
     };
     window.addEventListener('curated_discovery_local_mutation', handleLocalMutation);
 
-    // 4. Tab Visibility & Window Focus Auto-Revalidation (when switching browser tabs/windows)
+    // 4. Event-Driven Tab Visibility & Window Focus Auto-Revalidation
+    // Revalidates only when visitor actively returns to tab, debounced to prevent duplicate requests
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        // Allow immediate revalidation on tab focus, debounced to 1000ms
-        if (now - lastPublicFetchTimeRef.current < 1000) return;
+        // Allow revalidation only if at least 3 seconds have passed since last fetch
+        if (now - lastPublicFetchTimeRef.current < 3000) return;
         syncLatestCatalog(true);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
 
-    // 5. Stable Background Polling Heartbeat (every 10 seconds)
-    // Ensures other devices (mobile phones, secondary screens) update automatically without overloading DB connections
+    // 5. Extremely gentle background heartbeat (every 5 minutes / 300,000ms instead of 10s)
+    // Prevents hitting Vercel Fluid CPU / Active Execution limits on idle tabs
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        if (now - lastPublicFetchTimeRef.current < 5000) return;
+        if (now - lastPublicFetchTimeRef.current < 120000) return;
         syncLatestCatalog(false);
       }
-    }, 10000);
+    }, 300000);
 
     return () => {
       if (channel) {
